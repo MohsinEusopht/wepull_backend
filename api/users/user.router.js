@@ -1,0 +1,144 @@
+const router = require("express").Router();
+const { validateUserPermission } = require("../../permissions/user_permission");
+const { validateAdminPermission } = require("../../permissions/admin_permission");
+const {
+    defaultFun,
+    signUp,
+    login,
+    getRoles,
+    createUser,
+    getDeparts,
+    getUsers,
+    deleteUser,
+    editUser,
+    updateUser,
+    getCompany,
+    getDepartOfUser,
+    getCompanyManagementUsers,
+    getCompanyDeparts,
+    getParentDeparts,
+    createDepart,
+    deleteDepart,
+    editDepart,
+    updateDepart,
+    checkUser,
+    passwordReset,
+    checkPasswordResetToken,
+    updatePassword,
+    getLoginToken,
+    getCompanyByTenant,
+    getCompanyAccount,
+    activateCompany,
+    getActiveCompany,
+    getQuickbookExpenses,
+    getActivateCompany,
+    getXeroExpenses,
+    getCompanyByID,
+    getQuickbooksExpenseByAccount,
+    getAccountByID,
+    getXeroExpenseByAccount,
+    getCounts,
+    getDepartmentUsers,
+    getCountsForAccountant,
+    getQuickbookExpenseAttachment,
+    updateUserAsManager,
+    activateDepart,
+    checkSetupAccount,
+    updateSetupAccount,
+    updateUserProfile,
+    getDepartByID,
+    checkUserPassword,
+    changePassword,
+    getQuickbookVendors
+} = require("./user.controller");
+
+router.get("/", defaultFun);
+
+//Sign up
+router.post("/signUp", signUp);
+
+//Login
+router.post("/login", login);
+
+//Get user login token
+router.get("/getLoginToken/:email", getLoginToken);
+
+//Get all roles from database
+router.get("/getRoles",validateAdminPermission, getRoles);
+
+//Get depart of company
+router.get("/getDeparts/:id",validateUserPermission, getDeparts);
+router.get("/getDepartOfUser/:id",validateUserPermission, getDepartOfUser);
+router.post('/activateDepart', activateDepart);
+router.get('/getDepartByID/:id', getDepartByID);
+
+//Get company Data
+router.get('/getCompany/:user_id',validateUserPermission, getCompany);
+router.get('/getCompanyByID/:company_id', getCompanyByID);
+router.get('/getActiveCompany/:user_id', getActiveCompany);
+router.get('/getCompanyByTenant/:tenant_id',validateUserPermission, getCompanyByTenant);
+router.get('/getCompanyAccount/:user_id',validateAdminPermission, getCompanyAccount);
+router.post('/activateCompany', activateCompany);
+router.get('/getActivateCompany/:user_id', getActivateCompany);
+
+//User apis
+router.post("/createUser",validateAdminPermission, createUser);
+router.get("/checkSetupAccount/:email/:token", checkSetupAccount);
+router.post('/updateSetupAccount', updateSetupAccount);
+router.get("/getCompanyManagementUsers/:id",validateAdminPermission, getCompanyManagementUsers);
+router.get("/checkUserPassword/:email/:password", checkUserPassword)
+router.post("/changePassword", changePassword);
+
+//Edit user
+router.get('/editUser/:id', editUser);
+router.post('/updateUser', updateUser);
+router.post('/updateUserProfile', updateUserProfile);
+router.post('/updateUserAsManager', updateUserAsManager);
+
+//Get Company Users
+router.get('/getUsers/:id',validateAdminPermission, getUsers);
+
+//Soft delete user
+router.get('/deleteUser/:id',validateAdminPermission, deleteUser);
+
+//Check user by email
+router.get('/checkUser/:email', checkUser);
+
+//Password reset email
+router.post('/passwordReset', passwordReset);
+router.get('/checkPasswordResetToken/:token', checkPasswordResetToken);
+router.post('/updatePassword', updatePassword);
+
+//departs
+router.get('/getCompanyDeparts/:id',validateAdminPermission, getCompanyDeparts);
+router.get('/getParentDeparts',validateAdminPermission, getParentDeparts);
+router.post('/createDepart',validateAdminPermission, createDepart);
+router.get('/deleteDepart/:id',validateAdminPermission, deleteDepart);
+router.get('/editDepart/:id',validateAdminPermission, editDepart);
+router.post('/updateDepart',validateAdminPermission, updateDepart);
+
+
+router.get('/getQuickbookExpenses/:company_id', getQuickbookExpenses);
+router.get('/getXeroExpenses/:company_id', getXeroExpenses);
+
+
+router.get('/getQuickbookVendors/:company_id', getQuickbookVendors);
+// router.get('/getXeroExpenses/:company_id', getXeroExpenses);
+
+
+router.get('/getQuickbookExpenseAttachment/:company_id', getQuickbookExpenseAttachment);
+
+router.get('/getQuickbooksExpenseByAccount/:account_id/:company_id', getQuickbooksExpenseByAccount);
+router.get('/getXeroExpenseByAccount/:account_id/:company_id', getXeroExpenseByAccount);
+
+router.get('/getAccountByID/:account_id', getAccountByID);
+
+router.get('/getCounts/:user_id/:company_id',validateAdminPermission, getCounts);
+router.get('/getCountsForAccountant/:user_id/:company_id', getCountsForAccountant);
+
+router.get('/getDepartmentUsers/:depart_id', getDepartmentUsers);
+
+// router.get('/getAccounts/:company_id', getAccounts);
+
+
+module.exports = router;

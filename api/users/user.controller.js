@@ -226,14 +226,15 @@ module.exports = {
         try {
             const body = req.body;
             console.log(body);
-            return res.json({
-                "status": "200",
-                "message": "User created successfully"
-            });
+
             // const salt = genSaltSync(10);
             // let bycrpyt_password = hashSync(body.password, salt);
             const checkUserResult = await checkUser(body.email);
             console.log("checkUserResult[0].count",checkUserResult[0].count);
+            // return res.json({
+            //     "status": "200",
+            //     "message": "User created successfully"
+            // });
             // this.stop();
             if(checkUserResult[0].count === 0) {
                 const createUsersResult = await createUser(body.first_name,body.last_name, body.email, body.password, body.contact, body.company_id, body.depart_id.toString(), body.role_id, body.created_by, body.type);
@@ -248,22 +249,23 @@ module.exports = {
                 const result = setTokenForFirstTimeLogin(body.email, token);
 
                 let testAccount = await nodemailer.createTestAccount();
-                let transporter = nodemailer.createTransport({
-                    service: 'Gmail',
-                    auth: {
-                        user: 'mohjav031010@gmail.com',
-                        pass: 'Javed@0348'
-                    }
-                });
                 // let transporter = nodemailer.createTransport({
-                //     host: "smtp.ethereal.email",
-                //     port: 587,
-                //     secure: false, // true for 465, false for other ports
+                //     service: 'Gmail',
                 //     auth: {
-                //         user: testAccount.user, // generated ethereal user
-                //         pass: testAccount.pass, // generated ethereal password
-                //     },
+                //         user: 'mohjav031010@gmail.com',
+                //         pass: 'Javed@0348'
+                //     }
                 // });
+
+                let transporter = nodemailer.createTransport({
+                    host: "smtp.ethereal.email",
+                    port: 587,
+                    secure: false, // true for 465, false for other ports
+                    auth: {
+                        user: testAccount.user, // generated ethereal user
+                        pass: testAccount.pass, // generated ethereal password
+                    },
+                });
 
                 // send mail with defined transport object
                 let info = await transporter.sendMail({

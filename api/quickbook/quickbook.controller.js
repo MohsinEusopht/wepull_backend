@@ -1574,9 +1574,12 @@ module.exports = {
                     }
                 }
             }
-            else if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+
+            if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                console.log("Class is not undefined");
                 for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
                     const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                    console.log("Class id",Class.Id._text);
                     if(checkTenantDepartmentResult[0].depart_count === 0) {
                         if(Class.SubClass._text.toString() === "true") {
                             const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);

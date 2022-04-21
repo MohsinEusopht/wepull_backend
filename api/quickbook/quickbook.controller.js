@@ -1573,32 +1573,32 @@ module.exports = {
                         }
                     }
                 }
-                // if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                        const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
-                        if(checkTenantDepartmentResult[0].depart_count === 0) {
-                            if(Class.SubClass._text.toString() === "true") {
-                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
-                            }
-                            else {
-                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                            }
+            }
+            else if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                    const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                    if(checkTenantDepartmentResult[0].depart_count === 0) {
+                        if(Class.SubClass._text.toString() === "true") {
+                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                            console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
                         }
                         else {
-                            console.log("Found:", Class.Id._text)
-                            if(Class.SubClass._text.toString() === "true") {
-                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
-                            }
-                            else {
-                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                            }
+                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                            console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
                         }
                     }
-                // }
+                    else {
+                        console.log("Found:", Class.Id._text)
+                        if(Class.SubClass._text.toString() === "true") {
+                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                            console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                        }
+                        else {
+                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                            console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                        }
+                    }
+                }
             }
             else {
                 return res.json({

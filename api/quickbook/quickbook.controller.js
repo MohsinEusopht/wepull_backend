@@ -371,7 +371,8 @@ module.exports = {
         res.redirect(authUri);
     },
     quickbooks_callback: async (req, res) => {
-        res.setTimeout(20000);
+        res.setTimeout(0);
+        
         oauthClient
             .createToken(req.url)
             .then(async function (authResponse) {

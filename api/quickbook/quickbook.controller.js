@@ -870,7 +870,7 @@ module.exports = {
                                         const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
                                     }
                                 }
-
+                                res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
                                 const Attachables = [];
                                 //Get Expenses
 
@@ -1091,7 +1091,7 @@ module.exports = {
 
                                 //Get Departments
 
-                                res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
+
                                 console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
                                 if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
                                     for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {

@@ -80,7 +80,7 @@ const xero = new XeroClient({
     redirectUris: [process.env.XERO_REDIRECT_URI],
     scopes: scope,
     state: 'returnPage=my-sweet-dashboard', // custom params (optional)
-    httpTimeout: 3000 // ms (optional)
+    httpTimeout: 100000 // ms (optional)
 });
 
 async function xero_get_tenant(access_token){

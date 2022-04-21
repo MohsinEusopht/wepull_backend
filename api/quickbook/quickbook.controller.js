@@ -1548,7 +1548,7 @@ module.exports = {
 
             console.log("departments",departmentArray);
             console.log("classes", classArray.IntuitResponse.QueryResponse.Class);
-            if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined || classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+            if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
                 for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
                     const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
                     if(checkTenantDepartmentResult[0].depart_count === 0) {

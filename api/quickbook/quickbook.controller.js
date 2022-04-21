@@ -584,7 +584,7 @@ module.exports = {
                         await activeQuickbookAccount(jwtTokenDecode.realmid);
 
                         console.log("Sign up Working");
-                        return res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token);
+                        res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token);
                     }
                     else {
 
@@ -1145,7 +1145,7 @@ module.exports = {
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
                         console.log("updateCompanyTokenResult");
                         console.log("Login Working");
-                        return res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
+                        res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
                     }
                 }
                 else {

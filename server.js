@@ -94,7 +94,7 @@ let scope = 'openid profile email accounting.transactions offline_access'.split(
  */
 
 app.get('/', async (req, res) => {
-    res.send("Working");
+    res.send("Apis Working");
 });
 
 app.get('/xero_url', async (req, res) => {

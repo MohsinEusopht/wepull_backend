@@ -1091,82 +1091,83 @@ module.exports = {
 
                                 //Get Departments
 
-
+                                res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
                                 console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
-                                // if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                //     for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                //         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,getCompanyByTenantResult[0].id);
-                                //         if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                //             if(Department.SubDepartment._text.toString() === "true") {
-                                //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //         else {
-                                //             console.log("Found:", Department.Id._text)
-                                //             if(Department.SubDepartment._text.toString() === "true") {
-                                //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //     }
-                                //     if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                //         for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                //             const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,getCompanyByTenantResult[0].id);
-                                //             if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                //                 if(Class.SubClass._text.toString() === "true") {
-                                //                     const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                     console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //                 }
-                                //                 else {
-                                //                     const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                     console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //                 }
-                                //             }
-                                //             else {
-                                //                 console.log("Found:", Class.Id._text)
-                                //                 if(Class.SubClass._text.toString() === "true") {
-                                //                     const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                     console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //                 }
-                                //                 else {
-                                //                     const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                     console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //                 }
-                                //             }
-                                //         }
-                                //     }
-                                // }
+                                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,getCompanyByTenantResult[0].id);
+                                        if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                            if(Department.SubDepartment._text.toString() === "true") {
+                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            }
+                                            else {
+                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            }
+                                        }
+                                        else {
+                                            console.log("Found:", Department.Id._text)
+                                            if(Department.SubDepartment._text.toString() === "true") {
+                                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            }
+                                            else {
+                                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            }
+                                        }
+                                    }
+                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,getCompanyByTenantResult[0].id);
+                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                            }
+                                            else {
+                                                console.log("Found:", Class.Id._text)
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
 
                                 //Get vendors
 
 
-                                // if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                //     for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                //         const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
-                                //         if(checkTenantVendorResult[0].vendor_count === 0) {
-                                //             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                //             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                //             // console.log("address",address);
-                                //             console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             console.log("added");
-                                //         }
-                                //         else {
-                                //             console.log("found ",Vendor.Id._text);
-                                //             const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             console.log("updated");
-                                //         }
-                                //     }
-                                // }
+
+                                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                        const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
+                                        if(checkTenantVendorResult[0].vendor_count === 0) {
+                                            // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                            // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                            // console.log("address",address);
+                                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            console.log("added");
+                                        }
+                                        else {
+                                            console.log("found ",Vendor.Id._text);
+                                            const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.V4IDPseudonym._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            console.log("updated");
+                                        }
+                                    }
+                                }
 
 
 
@@ -1181,7 +1182,7 @@ module.exports = {
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
                         console.log("updateCompanyTokenResult");
                         console.log("Login Working");
-                        res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
+
                     }
                 }
                 else {

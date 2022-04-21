@@ -584,7 +584,7 @@ module.exports = {
                         await activeQuickbookAccount(jwtTokenDecode.realmid);
 
                         console.log("Sign up Working");
-                        res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token);
+                        return res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token);
                     }
                     else {
 
@@ -1145,16 +1145,16 @@ module.exports = {
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
                         console.log("updateCompanyTokenResult");
                         console.log("Login Working");
-                        res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
+                        return res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
                     }
                 }
                 else {
-                    res.redirect(`${process.env.APP_URL}login/error/xr`);
+                    return res.redirect(`${process.env.APP_URL}login/error/xr`);
                 }
             })
             .catch(function (e) {
                 console.error(e);
-                res.send('error');
+                return res.send('error');
             });
     },
     quickbook_refresh_token: async (req, res) => {

@@ -490,7 +490,7 @@ const server = app.listen(process.env.PORT || 3008, () => {
     }
 });
 
-server.timeout = 2000;
+server.timeout = 10000;
 
 /**
  * Optional : If NGROK is enabled
@@ -521,4 +521,4 @@ app.listen(port, () => {
     console.log("server up and running on PORT :", port);
 });
 
-app.timeout = 2000;
+app.timeout = 10000;

@@ -490,35 +490,36 @@ const server = app.listen(process.env.PORT || 3008, () => {
     }
 });
 
-server.timeout = 10000;
+server.timeout = 500000;
+console.log("💻 Server timeout", server.timeout);
 
 /**
  * Optional : If NGROK is enabled
  */
-if (ngrok) {
-    console.log('NGROK Enabled');
-    ngrok
-        .connect({ addr: process.env.PORT || 8000 })
-        .then((url) => {
-            redirectUri = `${url}/quickbooks_callback`;
-            console.log(`💳 Step 1 : Paste this URL in your browser :  ${url}`);
-            console.log(
-                '💳 Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
-            );
-            console.log(`💳 Step 3 : Copy Paste this callback URL into redirectURI :  ${redirectUri}`);
-            console.log(
-                `💻 Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
-            );
-        })
-        .catch(() => {
-            process.exit(1);
-        });
-}
+// if (ngrok) {
+//     console.log('NGROK Enabled');
+//     ngrok
+//         .connect({ addr: process.env.PORT || 8000 })
+//         .then((url) => {
+//             redirectUri = `${url}/quickbooks_callback`;
+//             console.log(`💳 Step 1 : Paste this URL in your browser :  ${url}`);
+//             console.log(
+//                 '💳 Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
+//             );
+//             console.log(`💳 Step 3 : Copy Paste this callback URL into redirectURI :  ${redirectUri}`);
+//             console.log(
+//                 `💻 Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
+//             );
+//         })
+//         .catch(() => {
+//             process.exit(1);
+//         });
+// }
 
 
-const port = process.env.PORT || 4000;
-app.listen(port, () => {
-    console.log("server up and running on PORT :", port);
-});
-
-app.timeout = 10000;
+// const port = process.env.PORT || 4000;
+// app.listen(port, () => {
+//     console.log("server up and running on PORT :", port);
+// });
+//
+// app.timeout = 10000;

@@ -226,6 +226,10 @@ module.exports = {
         try {
             const body = req.body;
             console.log(body);
+            return res.json({
+                "status": "200",
+                "message": "User created successfully"
+            });
             // const salt = genSaltSync(10);
             // let bycrpyt_password = hashSync(body.password, salt);
             const checkUserResult = await checkUser(body.email);

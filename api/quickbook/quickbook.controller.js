@@ -1199,6 +1199,7 @@ module.exports = {
     },
     syncExpenses: async (req, res) => {
         try {
+            timeout(req, res, 500);
             const user_id = req.params.user_id;
             const company_id = req.params.company_id;
             const record = await getActivateCompany(user_id);

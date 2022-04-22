@@ -11,6 +11,7 @@ const quickbookRouter = require("./api/quickbook/quickbook.router");
 const AppError = require("./utils/appError");
 const {static} = require("express");
 const cors = require("cors");
+const timeout = require('connect-timeout');
 
 const app = express();
 const path = require('path');
@@ -25,6 +26,7 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 //     origin: "http://localhost:3001"
 // };
 app.use(express.json());
+app.use(timeout('3600s'));
 app.use(cors());
 
 app.use("/api/users", userRouter);

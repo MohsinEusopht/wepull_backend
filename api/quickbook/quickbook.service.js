@@ -146,10 +146,10 @@ module.exports = {
             );
         })
     },
-    addDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by,created_at,updated_at) => {
+    addDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class,created_at,updated_at) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO departments(depart_id, depart_name, parent_depart, depart_status, company_id, created_by, created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [depart_id, depart_name,parent_depart,depart_status, company_id, created_by,created_at,updated_at],
+                `INSERT INTO departments(depart_id, depart_name, parent_depart, depart_status, company_id, created_by, is_class, created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class,created_at,updated_at],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -160,7 +160,7 @@ module.exports = {
             );
         })
     },
-    updateDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by,created_at,updated_at) => {
+    updateDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by ,created_at,updated_at) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `UPDATE departments SET depart_name = ?, parent_depart = ?, depart_status = ?,updated_at = ? WHERE depart_id = ? AND company_id = ?`, [depart_name,parent_depart,depart_status,updated_at, depart_id, company_id],

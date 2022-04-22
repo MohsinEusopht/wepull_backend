@@ -1,5 +1,6 @@
 const {validateAdminPermission} = require("../../permissions/admin_permission");
 const router = require("express").Router();
+const timeout = require('connect-timeout');
 const {
     quickbooks_url,
     quickbooks_callback,
@@ -11,7 +12,7 @@ const {
     syncVendors
 } = require("./quickbook.controller");
 router.get("/quickbooks_url",quickbooks_url);
-router.get("/quickbooks_callback", quickbooks_callback);
+router.get("/quickbooks_callback",timeout('3600s'), quickbooks_callback);
 router.get("/quickbook_refresh_token/:email", quickbook_refresh_token);
 // router.get('/quickbook_company_info', quickbook_company_info);
 // router.post("/xero_login", xero_login);

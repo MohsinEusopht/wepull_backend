@@ -1,5 +1,6 @@
 const {hashSync,genSaltSync,compareSync} = require("bcrypt");
 const crypto = require('crypto');
+const timeout = require('request-timeout');
 const{
     qbSignUp,
     updateRefreshToken,
@@ -371,6 +372,7 @@ module.exports = {
         res.redirect(authUri);
     },
     quickbooks_callback: async (req, res) => {
+        timeout(req, res, 500);
         oauthClient
             .createToken(req.url)
             .then(async function (authResponse) {

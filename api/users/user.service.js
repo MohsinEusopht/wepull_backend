@@ -465,7 +465,7 @@ module.exports = {
     getCompanyDeparts: (id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT d.id,d.depart_name,d.budget,p.depart_name as 'parent_depart',a.name,a.accountID FROM departments AS d LEFT JOIN departments AS p ON d.parent_depart=p.depart_id LEFT JOIN accounts AS a ON d.account_id=a.id WHERE d.company_id = ? and d.depart_status=1`, [id],
+                `SELECT d.id,d.depart_name,d.budget,IF(p.depart_name!='', p.depart_name, "-") as 'parent_depart',a.name,a.accountID FROM departments AS d LEFT JOIN departments AS p ON d.parent_depart=p.depart_id LEFT JOIN accounts AS a ON d.account_id=a.id WHERE d.company_id = ? and d.depart_status=1`, [id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

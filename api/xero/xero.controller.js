@@ -325,11 +325,11 @@ module.exports = {
                                 console.log("Name",Department.name);
                                 console.log("Status",Department.status);
                                 console.log()
-                                const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId);
+                                const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId,0);
                             }
                             else {
                                 console.log("depart found")
-                                const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId);
+                                const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId,0);
                             }
                         }
                     }
@@ -446,11 +446,11 @@ module.exports = {
                                     console.log("Name",Department.name);
                                     console.log("Status",Department.status);
                                     console.log()
-                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
                                 }
                                 else {
                                     console.log("depart found")
-                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id);
+                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
                                 }
                             }
                         }
@@ -559,11 +559,11 @@ module.exports = {
                                     console.log("Name",Department.name);
                                     console.log("Status",Department.status);
                                     console.log()
-                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0,createCompanyResultt.insertId, getUserByUserEmailResult.id);
+                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0,createCompanyResultt.insertId, getUserByUserEmailResult.id,0);
                                 }
                                 else {
                                     console.log("depart found")
-                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResultt.insertId);
+                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResultt.insertId,0);
                                 }
                             }
                         }
@@ -967,11 +967,11 @@ module.exports = {
                         console.log("Name",Department.name);
                         console.log("Status",Department.status);
                         console.log()
-                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, company_id, user_id);
+                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, company_id, user_id,0);
                     }
                     else {
                         console.log("depart found")
-                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, company_id);
+                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, company_id,0);
                     }
 
                 }

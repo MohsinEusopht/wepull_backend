@@ -91,10 +91,10 @@ module.exports = {
             );
         })
     },
-    addDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by) => {
+    addDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO departments(depart_id, depart_name, parent_depart, depart_status, company_id, created_by) VALUES (?, ?, ?, ?, ?, ?)`, [depart_id, depart_name,parent_depart,depart_status, company_id, created_by],
+                `INSERT INTO departments(depart_id, depart_name, parent_depart, depart_status, company_id, created_by, is_class) VALUES (?, ?, ?, ?, ?, ?, ?)`, [depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -105,10 +105,10 @@ module.exports = {
             );
         })
     },
-    updateDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id) => {
+    updateDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, is_class) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE departments SET depart_name = ?, parent_depart = ?, depart_status = ? WHERE depart_id = ? AND company_id = ?`, [depart_name,parent_depart,depart_status, depart_id, company_id],
+                `UPDATE departments SET depart_name = ?, parent_depart = ?, depart_status = ?, is_class = ? WHERE depart_id = ? AND company_id = ?`, [depart_name,parent_depart,depart_status, depart_id, company_id, is_class],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

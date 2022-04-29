@@ -935,7 +935,7 @@ module.exports = {
             const company_id = req.params.company_id;
             const record = await getActivateCompany(user_id);
             const user = await getUserById(user_id);
-            // console.log(record);
+            console.log("recordrecord",record);
             // console.log(user);
 
             const TS = new TokenSet({
@@ -957,16 +957,20 @@ module.exports = {
 
 
             const response = await xero.accountingApi.getTrackingCategories(record[0].tenant_id,  null, order, includeArchived);
-            console.log("result:::",response.body.trackingCategories.length)
+            console.log("result:::",response.body.trackingCategories[0].options)
 
             if(response.body.trackingCategories.length>0) {
+                console.log("length:::",response.body.trackingCategories.length)
                 for(const Department of response.body.trackingCategories[0].options) {
+                    console.log("Department.trackingOptionID",Department.trackingOptionID);
+                    // this.stop();
                     const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,company_id);
                     if(checkTenantDepartmentResult[0].depart_count === 0) {
                         console.log("Depart id",Department.trackingOptionID);
                         console.log("Name",Department.name);
                         console.log("Status",Department.status);
                         console.log()
+
                         const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, company_id, user_id,0);
                     }
                     else {

@@ -49,7 +49,8 @@ const {
     getDepartByID,
     checkUserPassword,
     changePassword,
-    getQuickbookVendors
+    getQuickbookVendors,
+    getUserCategory
 } = require("./user.controller");
 
 router.get("/", defaultFun);
@@ -117,6 +118,7 @@ router.get('/deleteDepart/:id',validateAdminPermission, deleteDepart);
 router.get('/editDepart/:id',validateAdminPermission, editDepart);
 router.post('/updateDepart',validateAdminPermission, updateDepart);
 
+router.get('/getUserCategory/:company_id', getUserCategory);
 
 router.get('/getQuickbookExpenses/:company_id', getQuickbookExpenses);
 router.get('/getXeroExpenses/:company_id', getXeroExpenses);

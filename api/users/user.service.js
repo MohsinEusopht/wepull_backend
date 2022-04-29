@@ -236,7 +236,21 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 // `SELECT u.id,u.first_name,u.last_name,u.email,u.contact,r.name as 'role',d.depart_name FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id LEFT JOIN departments d ON ur.depart_id=d.id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
-                `SELECT DISTINCT(u.id),u.first_name,u.last_name,u.email,u.contact,r.name as 'role' FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
+                `SELECT DISTINCT(u.id),u.first_name,u.last_name,u.email,u.contact,r.name as 'role',u.depart_id FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getUserCategory: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                // `SELECT u.id,u.first_name,u.last_name,u.email,u.contact,r.name as 'role',d.depart_name FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id LEFT JOIN departments d ON ur.depart_id=d.id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
+                `select u.user_id,d.depart_name from user_relations u join departments d on u.depart_id = d.id where u.company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

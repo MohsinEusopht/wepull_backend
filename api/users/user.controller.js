@@ -68,7 +68,8 @@ const {
     updateAccountOfDepart,
     deleteAccountOfDepart,
     getQuickbookVendors,
-    getUserCategory
+    getUserCategory,
+    getCompanyVendors
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -449,6 +450,21 @@ module.exports = {
         try {
             const company_id = req.params.company_id;
             const record = await getUserCategory(company_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getCompanyVendors: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const record = await getCompanyVendors(company_id);
             return res.json({
                 success: 1,
                 data: record

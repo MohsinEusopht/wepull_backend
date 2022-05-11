@@ -50,7 +50,8 @@ const {
     checkUserPassword,
     changePassword,
     getQuickbookVendors,
-    getUserCategory
+    getUserCategory,
+    getCompanyVendors
 } = require("./user.controller");
 
 router.get("/", defaultFun);
@@ -139,6 +140,8 @@ router.get('/getCounts/:user_id/:company_id',validateAdminPermission, getCounts)
 router.get('/getCountsForAccountant/:user_id/:company_id', getCountsForAccountant);
 
 router.get('/getDepartmentUsers/:depart_id', getDepartmentUsers);
+
+router.get('/getCompanyVendors/:company_id',getCompanyVendors);
 
 // router.get('/getAccounts/:company_id', getAccounts);
 

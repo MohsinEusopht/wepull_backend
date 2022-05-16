@@ -339,7 +339,7 @@ module.exports = {
                 const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId)
                 const activateCompanyResult = await activateCompany(getCompanyByTenantResult[0].id);
                 // const updateUserCompanyResult = await updateUserCompany(createUsersResult.insertId, createCompanyResult.insertId);
-                res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(email)+`/xero/0/`+ token);
+                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/0/`+ token);
             }
             else {
                 //Login Execution
@@ -584,7 +584,7 @@ module.exports = {
                 const activateCompanyResult = await activateCompany(getCompanyByTenantResultt[0].id);
 
                 // console.log("token",token);
-                res.redirect(`${process.env.APP_URL}xero_login/`+ encodeURIComponent(email)+`/xero/1/`+ token);
+                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token);
             }
         }
         else {

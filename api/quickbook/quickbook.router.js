@@ -8,7 +8,8 @@ const {
     syncExpenses,
     activateCompany,
     syncDepartments,
-    syncVendors
+    syncVendors,
+    syncAttachable
 } = require("./quickbook.controller");
 router.get("/quickbooks_url",quickbooks_url);
 router.get("/quickbooks_callback", quickbooks_callback);
@@ -21,6 +22,8 @@ router.get('/syncAccounts/:user_id/:company_id',validateAdminPermission, syncAcc
 router.get('/syncExpenses/:user_id/:company_id',validateAdminPermission, syncExpenses);
 router.get('/syncDepartments/:user_id/:company_id',validateAdminPermission, syncDepartments);
 router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVendors);
+router.get('/syncAttachable/:expense_id/:company_id/:user_id', syncAttachable);
+
 
 
 

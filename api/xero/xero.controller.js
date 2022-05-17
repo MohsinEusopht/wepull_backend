@@ -270,6 +270,73 @@ module.exports = {
                             console.log(`Status Code: ${err.response} => ${error}`);
                         }
 
+                        //Get Vendor
+
+                        const VifModifiedSince = null;
+                        const Vwhere = 'ContactStatus=="ACTIVE"';
+                        const Vorder = null;
+                        const ViDs = null;
+                        const Vpage = 1;
+                        const VincludeArchived = true;
+                        const VsummaryOnly = false;
+                        const VsearchTerm = null;
+
+                        // console.log("tokenSeT",xero.readTokenSet().expired());
+                        // if(xero.readTokenSet().expired() === false) {
+                            console.log("record[0].tenant_id",tenant.tenantId);
+                            const responseVendor = await xero.accountingApi.getContacts(tenant.tenantId, VifModifiedSince, Vwhere, Vorder, ViDs, Vpage, VincludeArchived, VsummaryOnly, VsearchTerm);
+                            if(responseVendor.body.contacts.length>0) {
+                                for(const Contact of responseVendor.body.contacts) {
+                                    let vendor_id = Contact.contactID;
+                                    let name = Contact.name;
+                                    let acct_num = Contact.accountNumber!==undefined?Contact.accountNumber:null;
+                                    let status = Contact.contactStatus==='ACTIVE'?1:0;
+                                    let email = Contact.emailAddress;
+                                    let address1 =  Contact.addresses[0].addressLine1!==undefined? Contact.addresses[0].addressLine1:"";
+                                    let address2 =  Contact.addresses[0].addressLine2!==undefined? Contact.addresses[0].addressLine2:"";
+                                    let address3 =  Contact.addresses[0].addressLine3!==undefined? Contact.addresses[0].addressLine3:"";
+                                    let address4 =  Contact.addresses[0].addressLine4!==undefined? Contact.addresses[0].addressLine4:"";
+                                    let address = address1 + address2 + address3 + address4;
+                                    let city = Contact.addresses[0].city;
+                                    let postalCode = Contact.addresses[0].postalCode;
+                                    let country = Contact.addresses[0].country;
+                                    let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
+                                    let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                                    let website = Contact.website!==undefined?Contact.website:null;
+                                    let balance = Contact.balances!==undefined?Contact.balances:null;
+                                    let date = Contact.updatedDateUTC;
+                                    console.log(vendor_id);
+                                    console.log(name);
+                                    console.log(status);
+                                    console.log(acct_num);
+                                    console.log(email);
+                                    console.log(address!==""?address:null);
+                                    console.log(contact);
+                                    console.log(mobile);
+                                    console.log(website);
+                                    console.log(null);
+                                    console.log(date);
+                                    console.log("-----------")
+                                    const checkTenantVendorResult = await checkTenantVendor(vendor_id,company_id);
+                                    if(checkTenantVendorResult[0].vendor_count === 0) {
+                                        // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                        // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                        // console.log("address",address);
+                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                                        const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
+                                        console.log("added");
+                                    }
+                                    else {
+                                        console.log("found ",vendor_id);
+                                        const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
+                                        console.log("updated");
+                                    }
+                                    // console.log(Contact);
+                                }
+                            }
+                            // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
+                        // }
+
                         //Get Expense
                         const page = 1;
                         const includeArchived = true;
@@ -391,6 +458,73 @@ module.exports = {
                                     const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"xero");
                                 }
                             }
+
+
+
+                            const VifModifiedSince = null;
+                            const Vwhere = 'ContactStatus=="ACTIVE"';
+                            const Vorder = null;
+                            const ViDs = null;
+                            const Vpage = 1;
+                            const VincludeArchived = true;
+                            const VsummaryOnly = false;
+                            const VsearchTerm = null;
+
+                            // console.log("tokenSeT",xero.readTokenSet().expired());
+                            // if(xero.readTokenSet().expired() === false) {
+                            console.log("record[0].tenant_id",tenant.tenantId);
+                            const responseVendor = await xero.accountingApi.getContacts(tenant.tenantId, VifModifiedSince, Vwhere, Vorder, ViDs, Vpage, VincludeArchived, VsummaryOnly, VsearchTerm);
+                            if(responseVendor.body.contacts.length>0) {
+                                for(const Contact of responseVendor.body.contacts) {
+                                    let vendor_id = Contact.contactID;
+                                    let name = Contact.name;
+                                    let acct_num = Contact.accountNumber!==undefined?Contact.accountNumber:null;
+                                    let status = Contact.contactStatus==='ACTIVE'?1:0;
+                                    let email = Contact.emailAddress;
+                                    let address1 =  Contact.addresses[0].addressLine1!==undefined? Contact.addresses[0].addressLine1:"";
+                                    let address2 =  Contact.addresses[0].addressLine2!==undefined? Contact.addresses[0].addressLine2:"";
+                                    let address3 =  Contact.addresses[0].addressLine3!==undefined? Contact.addresses[0].addressLine3:"";
+                                    let address4 =  Contact.addresses[0].addressLine4!==undefined? Contact.addresses[0].addressLine4:"";
+                                    let address = address1 + address2 + address3 + address4;
+                                    let city = Contact.addresses[0].city;
+                                    let postalCode = Contact.addresses[0].postalCode;
+                                    let country = Contact.addresses[0].country;
+                                    let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
+                                    let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                                    let website = Contact.website!==undefined?Contact.website:null;
+                                    let balance = Contact.balances!==undefined?Contact.balances:null;
+                                    let date = Contact.updatedDateUTC;
+                                    console.log(vendor_id);
+                                    console.log(name);
+                                    console.log(status);
+                                    console.log(acct_num);
+                                    console.log(email);
+                                    console.log(address!==""?address:null);
+                                    console.log(contact);
+                                    console.log(mobile);
+                                    console.log(website);
+                                    console.log(null);
+                                    console.log(date);
+                                    console.log("-----------")
+                                    const checkTenantVendorResult = await checkTenantVendor(vendor_id,getCompanyByTenantResult[0].id);
+                                    if(checkTenantVendorResult[0].vendor_count === 0) {
+                                        // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                        // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                        // console.log("address",address);
+                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                                        const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
+                                        console.log("added");
+                                    }
+                                    else {
+                                        console.log("found ",vendor_id);
+                                        const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
+                                        console.log("updated");
+                                    }
+                                    // console.log(Contact);
+                                }
+                            }
+                            // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
+                            // }
 
                             //Get Expense of existing company
                             const page = 1;

@@ -322,13 +322,13 @@ module.exports = {
                                         // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
                                         // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
                                         // console.log("address",address);
-                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
-                                        const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
+                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', 'USD', createUsersResult.insertId, date, date);
+                                        const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
                                         console.log("added");
                                     }
                                     else {
                                         console.log("found ",vendor_id);
-                                        const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
+                                        const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', createCompanyResult.insertId, createUsersResult.insertId, date, date);
                                         console.log("updated");
                                     }
                                     // console.log(Contact);
@@ -511,7 +511,7 @@ module.exports = {
                                         // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
                                         // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
                                         // console.log("address",address);
-                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                                        console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
                                         const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
                                         console.log("added");
                                     }

@@ -11,7 +11,8 @@ const {
     syncAccounts,
     syncExpenses,
     syncDepartments,
-    viewAttachment
+    viewAttachment,
+    syncVendors
 } = require("./xero.controller");
 
 router.get("/xero_url",xero_url);
@@ -27,6 +28,7 @@ router.get('/viewAttachment/:user_id/:attach_id', viewAttachment);
 router.get('/syncAccounts/:user_id/:company_id',validateAdminPermission, syncAccounts);
 router.get('/syncExpenses/:user_id/:company_id',validateAdminPermission, syncExpenses);
 router.get('/syncDepartments/:user_id/:company_id',validateAdminPermission, syncDepartments);
+router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVendors);
 
 
 module.exports = router;

@@ -250,32 +250,41 @@ module.exports = {
                 console.log("token", token);
                 const result = setTokenForFirstTimeLogin(body.email, token);
 
-                let testAccount = await nodemailer.createTestAccount();
+                // let testAccount = await nodemailer.createTestAccount();
+                let transporter = nodemailer.createTransport({
+                    service: 'Gmail',
+                    auth: {
+                        user: 'mohjav031010@gmail.com',
+                        pass: 'Javed@0348'
+                    }
+                });
+
+                let mailOptions = {
+                    from: 'mohjav031010@gmail.com',
+                    to: body.email,
+                    subject: 'Wepull Account Setup',
+                    html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
+                };
+
                 // let transporter = nodemailer.createTransport({
-                //     service: 'Gmail',
+                //     host: "smtp.ethereal.email",
+                //     port: 587,
+                //     secure: false, // true for 465, false for other ports
                 //     auth: {
-                //         user: 'mohjav031010@gmail.com',
-                //         pass: 'Javed@0348'
-                //     }
+                //         user: testAccount.user, // generated ethereal user
+                //         pass: testAccount.pass, // generated ethereal password
+                //     },
                 // });
 
-                let transporter = nodemailer.createTransport({
-                    host: "smtp.ethereal.email",
-                    port: 587,
-                    secure: false, // true for 465, false for other ports
-                    auth: {
-                        user: testAccount.user, // generated ethereal user
-                        pass: testAccount.pass, // generated ethereal password
-                    },
-                });
-
                 // send mail with defined transport object
-                let info = await transporter.sendMail({
-                    from: '"We Pull" <wepull@support.com>', // sender address
-                    to: body.email, // list of receivers
-                    subject: "WePull, Setup Account Email", // Subject line
-                    html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>", // html body
-                });
+                // let info = await transporter.sendMail({
+                //     from: '"We Pull" <wepull@support.com>', // sender address
+                //     to: body.email, // list of receivers
+                //     subject: "WePull, Setup Account Email", // Subject line
+                //     html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>", // html body
+                // });
+
+                await transporter.sendMail(mailOptions);
 
                 console.log("Message sent: %s", info.messageId);
 
@@ -816,25 +825,44 @@ module.exports = {
             console.log(body.email);
             const token = crypto.randomBytes(48).toString('hex');
             const result = passwordReset(body.email, token);
+            console.log("PW Reset Email", body.email)
 
-            let testAccount = await nodemailer.createTestAccount();
+
             let transporter = nodemailer.createTransport({
-                host: "smtp.ethereal.email",
-                port: 587,
-                secure: false, // true for 465, false for other ports
+                service: 'Gmail',
                 auth: {
-                    user: testAccount.user, // generated ethereal user
-                    pass: testAccount.pass, // generated ethereal password
-                },
+                    user: 'mohjav031010@gmail.com',
+                    pass: 'Javed@0348'
+                }
             });
 
-            // send mail with defined transport object
-            let info = await transporter.sendMail({
-                from: '"We Pull" <wepull@support.com>', // sender address
-                to: body.email, // list of receivers
-                subject: "WePull, Password Reset Email", // Subject line
-                html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>", // html body
-            });
+            let mailOptions = {
+                from: 'mohjav031010@gmail.com',
+                to: body.email,
+                subject: 'Wepull Password Reset',
+                html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
+            };
+
+            await transporter.sendMail(mailOptions);
+
+            // let testAccount = await nodemailer.createTestAccount();
+            // let transporter = nodemailer.createTransport({
+            //     host: "smtp.ethereal.email",
+            //     port: 587,
+            //     secure: false, // true for 465, false for other ports
+            //     auth: {
+            //         user: testAccount.user, // generated ethereal user
+            //         pass: testAccount.pass, // generated ethereal password
+            //     },
+            // });
+            //
+            // // send mail with defined transport object
+            // let info = await transporter.sendMail({
+            //     from: '"We Pull" <wepull@support.com>', // sender address
+            //     to: body.email, // list of receivers
+            //     subject: "WePull, Password Reset Email", // Subject line
+            //     html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>", // html body
+            // });
 
             console.log("Message sent: %s", info.messageId);
 

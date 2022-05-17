@@ -219,6 +219,19 @@ module.exports = {
             );
         })
     },
+    getDepartByDepartName: (depart_name, main_category) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT * FROM departments where depart_name = ? and main_category = ?`, [depart_name, main_category],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     changePassword: (id, password) => {
         return new Promise((resolov, reject) => {
             pool.query(
@@ -1080,6 +1093,19 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT * FROM vendors WHERE company_id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getVendorByID: (vendor_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT * FROM vendors WHERE vendor_id = ?`, [vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

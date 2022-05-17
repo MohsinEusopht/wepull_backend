@@ -48,10 +48,10 @@ module.exports = {
             );
         })
     },
-    addXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
+    addXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO expenses(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id],
+                `INSERT INTO expenses(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -62,10 +62,10 @@ module.exports = {
             );
         })
     },
-    updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
+    updateXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE expenses SET updated_at = ?, txn_date = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ? WHERE expense_id = ? and company_type = 'xero'`, [updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, expense_id],
+                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ? WHERE expense_id = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, expense_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -91,10 +91,10 @@ module.exports = {
             );
         })
     },
-    addDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class) => {
+    addDepartment: (depart_id, main_category, depart_name,parent_depart,depart_status, company_id, created_by, is_class) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO departments(depart_id, depart_name, parent_depart, depart_status, company_id, created_by, is_class) VALUES (?, ?, ?, ?, ?, ?, ?)`, [depart_id, depart_name,parent_depart,depart_status, company_id, created_by, is_class],
+                `INSERT INTO departments(depart_id, main_category, depart_name, parent_depart, depart_status, company_id, created_by, is_class) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [depart_id, main_category, depart_name,parent_depart,depart_status, company_id, created_by, is_class],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -105,15 +105,17 @@ module.exports = {
             );
         })
     },
-    updateDepartment: (depart_id, depart_name,parent_depart,depart_status, company_id, is_class) => {
+    updateDepartment: (depart_id, main_category, depart_name,parent_depart,depart_status, company_id, is_class) => {
+        // console.log(`UPDATE departments SET depart_name = ${depart_id},main_category = ${main_category}, parent_depart = ${parent_depart}, depart_status = ${depart_status}, is_class = ${is_class} WHERE depart_id = ${depart_id} AND company_id = ${company_id}`);
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE departments SET depart_name = ?, parent_depart = ?, depart_status = ?, is_class = ? WHERE depart_id = ? AND company_id = ?`, [depart_name,parent_depart,depart_status, depart_id, company_id, is_class],
+                `UPDATE departments SET depart_name = ?,main_category = ?, parent_depart = ?, depart_status = ?, is_class = ? WHERE depart_id = ? AND company_id = ?`, [depart_name, main_category ,parent_depart,depart_status, is_class, depart_id, company_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
                         return reject(error);
                     }
+                    console.log(results);
                     return resolov(results);
                 }
             );

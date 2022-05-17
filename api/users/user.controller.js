@@ -295,7 +295,7 @@ module.exports = {
                     "status": "200",
                     "message": "User created successfully",
                     "data": createUsersResult,
-                    "url": nodemailer.getTestMessageUrl(info)
+                    // "url": nodemailer.getTestMessageUrl(info)
                 });
             }
             else {

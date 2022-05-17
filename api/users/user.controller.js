@@ -840,7 +840,7 @@ module.exports = {
                 from: 'mohjav031010@gmail.com',
                 to: body.email,
                 subject: 'Wepull Password Reset',
-                html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
+                html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>"
             };
 
             await transporter.sendMail(mailOptions);

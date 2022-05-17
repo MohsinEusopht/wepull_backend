@@ -286,9 +286,9 @@ module.exports = {
 
                 await transporter.sendMail(mailOptions);
 
-                console.log("Message sent: %s", info.messageId);
-
-                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+                // console.log("Message sent: %s", info.messageId);
+                //
+                // console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 
 
                 return res.json({
@@ -864,9 +864,9 @@ module.exports = {
             //     html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>", // html body
             // });
 
-            console.log("Message sent: %s", info.messageId);
-
-            console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+            // console.log("Message sent: %s", info.messageId);
+            //
+            // console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 
             return res.json({
                 "status": "200",

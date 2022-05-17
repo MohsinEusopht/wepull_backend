@@ -350,11 +350,11 @@ module.exports = {
                                     console.log("Name",Department.name);
                                     console.log("Status",Department.status);
                                     console.log()
-                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId,0);
+                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId,0);
                                 }
                                 else {
                                     console.log("depart found")
-                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId,0);
+                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId,0);
                                 }
                             }
                         }
@@ -542,11 +542,11 @@ module.exports = {
                                         console.log("Name",Department.name);
                                         console.log("Status",Department.status);
                                         console.log()
-                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
+                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
                                     }
                                     else {
                                         console.log("depart found")
-                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
+                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
                                     }
                                 }
                             }

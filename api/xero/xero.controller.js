@@ -337,6 +337,29 @@ module.exports = {
                             // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
                         // }
 
+                        //Get Departments
+                        const orderDep = 'Name ASC';
+                        const includeArchivedDep = true;
+                        const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
+                        console.log("result:::",responseDep.body.trackingCategories.length)
+                        if(responseDep.body.trackingCategories.length>0) {
+                            for(const Department of responseDep.body.trackingCategories[0].options) {
+                                const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,createCompanyResult.insertId);
+                                if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                    console.log("Depart id",Department.trackingOptionID);
+                                    console.log("Name",Department.name);
+                                    console.log("Status",Department.status);
+                                    console.log()
+                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId,0);
+                                }
+                                else {
+                                    console.log("depart found")
+                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId,0);
+                                }
+                            }
+                        }
+                    }
+
                         //Get Expense
                         const page = 1;
                         const includeArchived = true;
@@ -391,28 +414,7 @@ module.exports = {
                             }
                         }
 
-                        //Get Departments
-                        const orderDep = 'Name ASC';
-                        const includeArchivedDep = true;
-                        const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
-                        console.log("result:::",responseDep.body.trackingCategories.length)
-                        if(responseDep.body.trackingCategories.length>0) {
-                            for(const Department of responseDep.body.trackingCategories[0].options) {
-                                const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,createCompanyResult.insertId);
-                                if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                    console.log("Depart id",Department.trackingOptionID);
-                                    console.log("Name",Department.name);
-                                    console.log("Status",Department.status);
-                                    console.log()
-                                    const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId, createUsersResult.insertId,0);
-                                }
-                                else {
-                                    console.log("depart found")
-                                    const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResult.insertId,0);
-                                }
-                            }
-                        }
-                    }
+
 
                     // const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
                     const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId)
@@ -526,6 +528,30 @@ module.exports = {
                             // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
                             // }
 
+
+                            //Get Departments of existing company
+                            const orderDep = 'Name ASC';
+                            const includeArchivedDep = true;
+                            const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
+                            console.log("result:::",responseDep.body.trackingCategories.length)
+                            if(responseDep.body.trackingCategories.length>0) {
+                                for(const Department of responseDep.body.trackingCategories[0].options) {
+                                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
+                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                        console.log("Depart id",Department.trackingOptionID);
+                                        console.log("Name",Department.name);
+                                        console.log("Status",Department.status);
+                                        console.log()
+                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
+                                    }
+                                    else {
+                                        console.log("depart found")
+                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
+                                    }
+                                }
+                            }
+
+
                             //Get Expense of existing company
                             const page = 1;
                             const includeArchived = true;
@@ -595,27 +621,7 @@ module.exports = {
                                 }
                             }
 
-                            //Get Departments of existing company
-                            const orderDep = 'Name ASC';
-                            const includeArchivedDep = true;
-                            const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
-                            console.log("result:::",responseDep.body.trackingCategories.length)
-                            if(responseDep.body.trackingCategories.length>0) {
-                                for(const Department of responseDep.body.trackingCategories[0].options) {
-                                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
-                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                        console.log("Depart id",Department.trackingOptionID);
-                                        console.log("Name",Department.name);
-                                        console.log("Status",Department.status);
-                                        console.log()
-                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
-                                    }
-                                    else {
-                                        console.log("depart found")
-                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
-                                    }
-                                }
-                            }
+
 
                             // const order = 'Code ASC';
 

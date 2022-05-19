@@ -51,7 +51,11 @@ const {
     changePassword,
     getQuickbookVendors,
     getUserCategory,
-    getCompanyVendors
+    getCompanyVendors,
+    getQuickbookExpenseByCategory,
+    getXeroExpenseByCategory,
+    getQuickbookExpenseByCategoryAndVendor,
+    getXeroExpenseByCategoryAndVendor
 } = require("./user.controller");
 
 router.get("/", defaultFun);
@@ -143,6 +147,11 @@ router.get('/getDepartmentUsers/:depart_id', getDepartmentUsers);
 
 router.get('/getCompanyVendors/:company_id',getCompanyVendors);
 
+router.get('/getQuickbookExpenseByCategory/:company_id/:category_id', getQuickbookExpenseByCategory);
+router.get('/getXeroExpenseByCategory/:company_id/:category_id', getXeroExpenseByCategory);
+
+router.get('/getQuickbookExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getQuickbookExpenseByCategoryAndVendor);
+router.get('/getXeroExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getXeroExpenseByCategoryAndVendor);
 // router.get('/getAccounts/:company_id', getAccounts);
 
 

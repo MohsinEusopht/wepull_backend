@@ -48,10 +48,10 @@ module.exports = {
             );
         })
     },
-    addXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
+    addXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO expenses(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id],
+                `INSERT INTO expenses(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -62,10 +62,10 @@ module.exports = {
             );
         })
     },
-    updateXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
+    updateXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ? WHERE expense_id = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, expense_id],
+                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_number = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ? WHERE expense_id = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, expense_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

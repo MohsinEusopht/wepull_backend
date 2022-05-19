@@ -895,10 +895,66 @@ module.exports = {
             );
         })
     },
+    getQuickbookExpenseByCategory: (company_id, category_id) => {
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // console.log("query",q);
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.department_id = ? ORDER BY e.created_at ASC`, [company_id, category_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getQuickbookExpenseByCategoryAndVendor: (company_id, category_id, vendor_id) => {
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // console.log("query",q);
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     getXeroExpenseByAccount: (account_id ,company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.account_number = ? ORDER BY e.created_at ASC`, [company_id, account_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getXeroExpenseByCategory: (company_id, category_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.department_id = ? ORDER BY e.created_at ASC`, [company_id, category_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getXeroExpenseByCategoryAndVendor: (company_id, category_id, vendor_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1042,6 +1098,19 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 `UPDATE companies SET currency = ?, company_name = ?, company_type = ?, industry_type = ?  WHERE tenant_id = ?`, [currency, name,company_type,industry_type, tenant_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getCompanyById: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `select * from companies where id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

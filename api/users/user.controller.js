@@ -69,7 +69,11 @@ const {
     deleteAccountOfDepart,
     getQuickbookVendors,
     getUserCategory,
-    getCompanyVendors
+    getCompanyVendors,
+    getQuickbookExpenseByCategory,
+    getXeroExpenseByCategory,
+    getQuickbookExpenseByCategoryAndVendor,
+    getXeroExpenseByCategoryAndVendor
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -470,10 +474,11 @@ module.exports = {
             });
         }
     },
-    getCompanyVendors: async(req, res) => {
+    getQuickbookExpenseByCategory: async(req, res) => {
         try {
             const company_id = req.params.company_id;
-            const record = await getCompanyVendors(company_id);
+            const category_id = req.params.category_id;
+            const record = await getQuickbookExpenseByCategory(company_id, category_id);
             return res.json({
                 success: 1,
                 data: record
@@ -485,6 +490,72 @@ module.exports = {
             });
         }
     },
+    getXeroExpenseByCategory: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const category_id = req.params.category_id;
+            const record = await getXeroExpenseByCategory(company_id, category_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getQuickbookExpenseByCategoryAndVendor: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const category_id = req.params.category_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getQuickbookExpenseByCategoryAndVendor(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getXeroExpenseByCategoryAndVendor: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const category_id = req.params.category_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getXeroExpenseByCategoryAndVendor(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    // getExpenseByCategory: async(req, res) => {
+    //     try {
+    //         const company_id = req.params.company_id;
+    //         const category_id = req.params.category_id;
+    //         const record = await getExpenseByCategory(company_id, category_id);
+    //         return res.json({
+    //             success: 1,
+    //             data: record
+    //         });
+    //     } catch (e) {
+    //         return res.status(404).json({
+    //             success: 0,
+    //             message: "Error :" + e.message,
+    //         });
+    //     }
+    // },
     deleteUser: async(req, res) => {
         try {
             const id = req.params.id;
@@ -1147,6 +1218,22 @@ module.exports = {
             const depart_id = req.params.depart_id;
             console.log(depart_id);
             const record = await getDepartmentUsers(depart_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getCompanyVendors: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            // console.log(depart_id);
+            const record = await getCompanyVendors(company_id);
             return res.json({
                 success: 1,
                 data: record

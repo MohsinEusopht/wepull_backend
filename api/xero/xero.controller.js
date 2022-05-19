@@ -37,7 +37,8 @@ const {
     getUserById,
     updateCompanyInfo,
     checkAttachable,
-    updateUserCompanyResult
+    updateUserCompanyResult,
+    getCompanyById
 } = require("../users/user.service");
 
 const {XeroClient} = require("xero-node");
@@ -398,18 +399,22 @@ module.exports = {
                                 console.log("aaa");
                                 try {
                                     const responseAttachment = await xero.accountingApi.getInvoiceAttachments(tenant.tenantId, Expense.invoiceID);
-                                    console.log(responseAttachment.body.attachments[0]);
-                                    let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
-                                    if(checkAttachableResult[0].attach_count === 0) {
-                                        // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
-                                        let addAttachableResult = await addAttachable(Expense.invoiceID,  createCompanyResult.insertId, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                        console.log("attachable inserted",Expense.invoiceID,  createCompanyResult.insertId, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                                    // console.log(responseAttachment.body.attachments[0]);
+                                    for (let i=0;i<responseAttachment.body.attachments.length;i++) {
+                                        console.log("attachment",i);
+                                        console.log("attachment:::",responseAttachment.body.attachments[i])
+                                        let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[i].attachmentID,Expense.invoiceID);
+                                        if(checkAttachableResult[0].attach_count === 0) {
+                                            // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                                            let addAttachableResult = await addAttachable(Expense.invoiceID,  createCompanyResult.insertId, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                            console.log("attachable inserted",Expense.invoiceID,  createCompanyResult.insertId, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                        }
+                                        else {
+                                            let updateAttachableResult = await updateAttachable(Expense.invoiceID, createCompanyResult.insertId, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                        }
+
                                     }
-                                    else {
-                                        let updateAttachableResult = await updateAttachable(Expense.invoiceID, createCompanyResult.insertId, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                    }
-                                    console.log("aaa1");
-                                    console.log("attachment:::",responseAttachment.body.attachments)
+
                                 }
                                 catch (e) {
                                     console.log("Error",e);
@@ -423,7 +428,7 @@ module.exports = {
                     const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId)
                     const activateCompanyResult = await activateCompany(getCompanyByTenantResult[0].id);
                     // const updateUserCompanyResult = await updateUserCompany(createUsersResult.insertId, createCompanyResult.insertId);
-                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/0/`+ token);
+                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/0/`+ token + `/sign_up`);
                 }
                 else {
                     //Login Execution
@@ -434,6 +439,7 @@ module.exports = {
                     const getCompanyResult = await getCompany(getUserByUserEmailResult.id);
                     // console.log(getCompanyResult);
                     for (const tenant of tenantArray) {
+                        // const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
                         const getCompanyByTenantResult = await getCompanyByTenant(tenant.tenantId)
                         //Check weather company exist or not
                         if(getCompanyByTenantResult.length > 0) {
@@ -447,24 +453,249 @@ module.exports = {
 
 
 
-                            //Get all account of existing company
+                            // //Get all account of existing company
+                            // const response = await xero.accountingApi.getAccounts(tenant.tenantId, null, null, order);
+                            // // console.log(typeof response.body.accounts);
+                            // let res = response.body.accounts;
+                            // for (const Account of res) {
+                            //     // console.log("Company ID:",company.id, "Account ID: ", Account.accountID);
+                            //     //get company by tenant id
+                            //     console.log("company by tenant length of tenant", tenant.tenantId , " : " ,getCompanyByTenantResult.length);
+                            //     const checkTenantAccountResult = await checkTenantAccount(Account.accountID,getCompanyByTenantResult[0].id);
+                            //     // console.log("count:",checkTenantAccountResult[0].account_count);
+                            //     console.log("account id:",Account.accountID,"company id:",getCompanyByTenantResult[0].id,"count:",checkTenantAccountResult[0].account_count);
+                            //     if(checkTenantAccountResult[0].account_count === 0) {
+                            //         console.log(getCompanyByTenantResult[0].id ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
+                            //         const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"xero");
+                            //     }
+                            // }
+
+
+
+                            // const VifModifiedSince = null;
+                            // const Vwhere = 'ContactStatus=="ACTIVE"';
+                            // const Vorder = null;
+                            // const ViDs = null;
+                            // const Vpage = 1;
+                            // const VincludeArchived = true;
+                            // const VsummaryOnly = false;
+                            // const VsearchTerm = null;
+                            //
+                            // // console.log("tokenSeT",xero.readTokenSet().expired());
+                            // // if(xero.readTokenSet().expired() === false) {
+                            // console.log("record[0].tenant_id",tenant.tenantId);
+                            // const responseVendor = await xero.accountingApi.getContacts(tenant.tenantId, VifModifiedSince, Vwhere, Vorder, ViDs, Vpage, VincludeArchived, VsummaryOnly, VsearchTerm);
+                            // if(responseVendor.body.contacts.length>0) {
+                            //     for(const Contact of responseVendor.body.contacts) {
+                            //         let vendor_id = Contact.contactID;
+                            //         let name = Contact.name;
+                            //         let acct_num = Contact.accountNumber!==undefined?Contact.accountNumber:null;
+                            //         let status = Contact.contactStatus==='ACTIVE'?1:0;
+                            //         let email = Contact.emailAddress;
+                            //         let address1 =  Contact.addresses[0].addressLine1!==undefined? Contact.addresses[0].addressLine1:"";
+                            //         let address2 =  Contact.addresses[0].addressLine2!==undefined? Contact.addresses[0].addressLine2:"";
+                            //         let address3 =  Contact.addresses[0].addressLine3!==undefined? Contact.addresses[0].addressLine3:"";
+                            //         let address4 =  Contact.addresses[0].addressLine4!==undefined? Contact.addresses[0].addressLine4:"";
+                            //         let address = address1 + address2 + address3 + address4;
+                            //         let city = Contact.addresses[0].city;
+                            //         let postalCode = Contact.addresses[0].postalCode;
+                            //         let country = Contact.addresses[0].country;
+                            //         let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
+                            //         let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                            //         let website = Contact.website!==undefined?Contact.website:null;
+                            //         let balance = Contact.balances!==undefined?Contact.balances:null;
+                            //         let date = Contact.updatedDateUTC;
+                            //         console.log(vendor_id);
+                            //         console.log(name);
+                            //         console.log(status);
+                            //         console.log(acct_num);
+                            //         console.log(email);
+                            //         console.log(address!==""?address:null);
+                            //         console.log(contact);
+                            //         console.log(mobile);
+                            //         console.log(website);
+                            //         console.log(null);
+                            //         console.log(date);
+                            //         console.log("-----------")
+                            //         const checkTenantVendorResult = await checkTenantVendor(vendor_id,getCompanyByTenantResult[0].id);
+                            //         if(checkTenantVendorResult[0].vendor_count === 0) {
+                            //             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                            //             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                            //             // console.log("address",address);
+                            //             console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
+                            //             const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
+                            //             console.log("added");
+                            //         }
+                            //         else {
+                            //             console.log("found ",vendor_id);
+                            //             const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, getCompanyByTenantResult[0].currency, status, 'xero', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, date, date);
+                            //             console.log("updated");
+                            //         }
+                            //         // console.log(Contact);
+                            //     }
+                            // }
+                            // // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
+                            // // }
+
+
+                            // //Get Departments of existing company
+                            // const orderDep = 'Name ASC';
+                            // const includeArchivedDep = true;
+                            // const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
+                            // console.log("result:::",responseDep.body.trackingCategories.length)
+                            // if(responseDep.body.trackingCategories.length>0) {
+                            //     for(let i=0;i<responseDep.body.trackingCategories.length;i++) {
+                            //         for(const Department of responseDep.body.trackingCategories[i].options) {
+                            //             const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
+                            //             if(checkTenantDepartmentResult[0].depart_count === 0) {
+                            //                 console.log("Depart id",Department.trackingOptionID);
+                            //                 console.log("Name",Department.name);
+                            //                 console.log("Status",Department.status);
+                            //                 console.log()
+                            //                 const addDepartmentResult = addDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
+                            //             }
+                            //             else {
+                            //                 console.log("depart found")
+                            //                 const updateDepartmentResult = updateDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
+                            //             }
+                            //         }
+                            //     }
+                            //
+                            // }
+
+
+                            // //Get Expense of existing company
+                            // const page = 1;
+                            // const includeArchived = true;
+                            // const createdByMyApp = false;
+                            // const unitdp = 4;
+                            // const summaryOnly = false;
+                            // const responseExp = await xero.accountingApi.getInvoices(tenant.tenantId, null, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
+                            // console.log("Expense length on company add",responseExp.body.invoices.length);
+                            // // console.log(response.body || response.response.statusCode)
+                            // // let expenseArray = JSON.parse(response.body.invoices);
+                            // //
+                            //
+                            // // console.log("Expense",responseExp.body.invoices);
+                            // // this.stop();
+                            // for(const Expense of responseExp.body.invoices) {
+                            //     if(Expense.type === "ACCPAY") {
+                            //         const getExpenseCountResult = await checkTenantExpense(Expense.invoiceID, getCompanyByTenantResult[0].id);
+                            //         if (getExpenseCountResult[0].expense_count === 0) {
+                            //             console.log(Expense)
+                            //             // console.log("Company id",getCompanyByTenantResult)
+                            //             console.log()
+                            //             let vn = await getVendorByID(Expense.contact.contactID);
+                            //             console.log("vendor", vn[0].name);
+                            //             let gdpart = null;
+                            //             if(Expense.lineItems[0].tracking.length>0) {
+                            //                 gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                            //                 console.log("GETED DEPART", gdpart);
+                            //                 console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
+                            //             }
+                            //             // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id
+                            //             const addExpenseResult = await addXeroExpense(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].name!==undefined?vn[0].name:null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, gdpart!==null?gdpart[0].depart_id:null, Expense.lineItems[0].unitAmount, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                            //         }
+                            //         else {
+                            //             let vn = await getVendorByID(Expense.contact.contactID);
+                            //             console.log("vendor", vn[0].name);
+                            //             let gdpart = null;
+                            //             if(Expense.lineItems[0].tracking.length>0) {
+                            //                 gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                            //                 console.log("GETED DEPART", gdpart);
+                            //                 console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
+                            //             }
+                            //             const updateExpenseResult = await updateXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                            //         }
+                            //     }
+                            //
+                            //     if(Expense.hasAttachments === true) {
+                            //         console.log("Line item", Expense.lineItems[0])
+                            //         console.log("aaa");
+                            //         try {
+                            //             const responseAttachment = await xero.accountingApi.getInvoiceAttachments(tenant.tenantId, Expense.invoiceID);
+                            //             console.log(responseAttachment.body.attachments[0]);
+                            //             let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
+                            //             if(checkAttachableResult[0].attach_count === 0) {
+                            //                 // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                            //                 let addAttachableResult = await addAttachable(Expense.invoiceID,  getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            //                 console.log("attachable inserted",Expense.invoiceID,  getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            //             }
+                            //             else {
+                            //                 let updateAttachableResult = await updateAttachable(Expense.invoiceID, getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            //             }
+                            //             console.log("aaa1");
+                            //             console.log("attachment:::",responseAttachment.body.attachments)
+                            //         }
+                            //         catch (e) {
+                            //             console.log("Error",e);
+                            //         }
+                            //     }
+                            // }
+
+
+
+                            // const order = 'Code ASC';
+
+                            const currencyResponse = await xero.accountingApi.getCurrencies(tenant.tenantId,  null, null);
+
+                            const updateCompanyCodeResult = await updateCompanyInfo(tenant.tenantId, currencyResponse.body.currencies[0].code,tenant.tenantName);
+                        }
+                        else {
+                            //Add new company
+
+                            //Create new company on add company after login
+                            // const order = 'Code ASC';
+
+                            const currencyResponse = await xero.accountingApi.getCurrencies(tenant.tenantId,  null, null);
+                            // console.log(currencyResponse.body.currencies[0].code);
+
+                            const createCompanyResultt = await createCompany(tenant.tenantId,tenant.tenantName,tenant.createdDateUtc, tenant.tenantType, null, currencyResponse.body.currencies[0].code,null,null,getUserByUserEmailResult.id);
+                            //Create role of user company
+                            const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResultt.insertId, null, 1, null);
+                            console.log("register company tenant",tenant.tenantId);
+                            console.log("created company id ",createCompanyResultt.insertId);
+
+                            //Get Account  on company add function
                             const response = await xero.accountingApi.getAccounts(tenant.tenantId, null, null, order);
                             // console.log(typeof response.body.accounts);
                             let res = response.body.accounts;
+
                             for (const Account of res) {
                                 // console.log("Company ID:",company.id, "Account ID: ", Account.accountID);
                                 //get company by tenant id
+                                const getCompanyByTenantResult = await getCompanyByTenant(tenant.tenantId)
                                 console.log("company by tenant length of tenant", tenant.tenantId , " : " ,getCompanyByTenantResult.length);
                                 const checkTenantAccountResult = await checkTenantAccount(Account.accountID,getCompanyByTenantResult[0].id);
                                 // console.log("count:",checkTenantAccountResult[0].account_count);
                                 console.log("account id:",Account.accountID,"company id:",getCompanyByTenantResult[0].id,"count:",checkTenantAccountResult[0].account_count);
                                 if(checkTenantAccountResult[0].account_count === 0) {
                                     console.log(getCompanyByTenantResult[0].id ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
-                                    const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"xero");
+                                    const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, createCompanyResultt.insertId, getUserByUserEmailResult.id,"xero");
                                 }
                             }
 
-
+                            //Get Departments on company add function
+                            const orderDep = 'Name ASC';
+                            const includeArchivedDep = true;
+                            const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
+                            console.log("result:::",responseDep.body.trackingCategories.length)
+                            if(responseDep.body.trackingCategories.length>0) {
+                                for(const Department of responseDep.body.trackingCategories[0].options) {
+                                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
+                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                        console.log("Depart id",Department.trackingOptionID);
+                                        console.log("Name",Department.name);
+                                        console.log("Status",Department.status);
+                                        console.log()
+                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0,createCompanyResultt.insertId, getUserByUserEmailResult.id,0);
+                                    }
+                                    else {
+                                        console.log("depart found")
+                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResultt.insertId,0);
+                                    }
+                                }
+                            }
 
                             const VifModifiedSince = null;
                             const Vwhere = 'ContactStatus=="ACTIVE"';
@@ -530,144 +761,6 @@ module.exports = {
                             }
                             // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
                             // }
-
-
-                            //Get Departments of existing company
-                            const orderDep = 'Name ASC';
-                            const includeArchivedDep = true;
-                            const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
-                            console.log("result:::",responseDep.body.trackingCategories.length)
-                            if(responseDep.body.trackingCategories.length>0) {
-                                for(let i=0;i<responseDep.body.trackingCategories.length;i++) {
-                                    for(const Department of responseDep.body.trackingCategories[i].options) {
-                                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
-                                        if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                            console.log("Depart id",Department.trackingOptionID);
-                                            console.log("Name",Department.name);
-                                            console.log("Status",Department.status);
-                                            console.log()
-                                            const addDepartmentResult = addDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,0);
-                                        }
-                                        else {
-                                            console.log("depart found")
-                                            const updateDepartmentResult = updateDepartment(Department.trackingOptionID, responseDep.body.trackingCategories[i].trackingCategoryID, Department.name,null,Department.status==="ACTIVE"?1:0, getCompanyByTenantResult[0].id,0);
-                                        }
-                                    }
-                                }
-
-                            }
-
-
-                            //Get Expense of existing company
-                            const page = 1;
-                            const includeArchived = true;
-                            const createdByMyApp = false;
-                            const unitdp = 4;
-                            const summaryOnly = false;
-                            const responseExp = await xero.accountingApi.getInvoices(tenant.tenantId, null, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
-                            console.log("Expense length on company add",responseExp.body.invoices.length);
-                            // console.log(response.body || response.response.statusCode)
-                            // let expenseArray = JSON.parse(response.body.invoices);
-                            //
-
-                            // console.log("Expense",responseExp.body.invoices);
-                            // this.stop();
-                            for(const Expense of responseExp.body.invoices) {
-                                if(Expense.type === "ACCPAY") {
-                                    const getExpenseCountResult = await checkTenantExpense(Expense.invoiceID, getCompanyByTenantResult[0].id);
-                                    if (getExpenseCountResult[0].expense_count === 0) {
-                                        console.log(Expense)
-                                        // console.log("Company id",getCompanyByTenantResult)
-                                        console.log()
-                                        let vn = await getVendorByID(Expense.contact.contactID);
-                                        console.log("vendor", vn[0].name);
-                                        let gdpart = null;
-                                        if(Expense.lineItems[0].tracking.length>0) {
-                                            gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
-                                            console.log("GETED DEPART", gdpart);
-                                            console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
-                                        }
-                                        // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id
-                                        const addExpenseResult = await addXeroExpense(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].name!==undefined?vn[0].name:null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, gdpart!==null?gdpart[0].depart_id:null, Expense.lineItems[0].unitAmount, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                    }
-                                    else {
-                                        let vn = await getVendorByID(Expense.contact.contactID);
-                                        console.log("vendor", vn[0].name);
-                                        let gdpart = null;
-                                        if(Expense.lineItems[0].tracking.length>0) {
-                                            gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
-                                            console.log("GETED DEPART", gdpart);
-                                            console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
-                                        }
-                                        const updateExpenseResult = await updateXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                    }
-                                }
-
-                                if(Expense.hasAttachments === true) {
-                                    console.log("Line item", Expense.lineItems[0])
-                                    console.log("aaa");
-                                    try {
-                                        const responseAttachment = await xero.accountingApi.getInvoiceAttachments(tenant.tenantId, Expense.invoiceID);
-                                        console.log(responseAttachment.body.attachments[0]);
-                                        let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
-                                        if(checkAttachableResult[0].attach_count === 0) {
-                                            // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
-                                            let addAttachableResult = await addAttachable(Expense.invoiceID,  getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                            console.log("attachable inserted",Expense.invoiceID,  getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                        }
-                                        else {
-                                            let updateAttachableResult = await updateAttachable(Expense.invoiceID, getCompanyByTenantResult[0].id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                        }
-                                        console.log("aaa1");
-                                        console.log("attachment:::",responseAttachment.body.attachments)
-                                    }
-                                    catch (e) {
-                                        console.log("Error",e);
-                                    }
-                                }
-                            }
-
-
-
-                            // const order = 'Code ASC';
-
-                            const currencyResponse = await xero.accountingApi.getCurrencies(tenant.tenantId,  null, null);
-
-                            const updateCompanyCodeResult = await updateCompanyInfo(tenant.tenantId, currencyResponse.body.currencies[0].code,tenant.tenantName);
-                        }
-                        else {
-                            //Add new company
-
-                            //Create new company on add company after login
-                            // const order = 'Code ASC';
-
-                            const currencyResponse = await xero.accountingApi.getCurrencies(tenant.tenantId,  null, null);
-                            // console.log(currencyResponse.body.currencies[0].code);
-
-                            const createCompanyResultt = await createCompany(tenant.tenantId,tenant.tenantName,tenant.createdDateUtc, tenant.tenantType, null, currencyResponse.body.currencies[0].code,null,null,getUserByUserEmailResult.id);
-                            //Create role of user company
-                            const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResultt.insertId, null, 1, null);
-                            console.log("register company tenant",tenant.tenantId);
-                            console.log("created company id ",createCompanyResultt.insertId);
-
-                            //Get Account  on company add function
-                            const response = await xero.accountingApi.getAccounts(tenant.tenantId, null, null, order);
-                            // console.log(typeof response.body.accounts);
-                            let res = response.body.accounts;
-
-                            for (const Account of res) {
-                                // console.log("Company ID:",company.id, "Account ID: ", Account.accountID);
-                                //get company by tenant id
-                                const getCompanyByTenantResult = await getCompanyByTenant(tenant.tenantId)
-                                console.log("company by tenant length of tenant", tenant.tenantId , " : " ,getCompanyByTenantResult.length);
-                                const checkTenantAccountResult = await checkTenantAccount(Account.accountID,getCompanyByTenantResult[0].id);
-                                // console.log("count:",checkTenantAccountResult[0].account_count);
-                                console.log("account id:",Account.accountID,"company id:",getCompanyByTenantResult[0].id,"count:",checkTenantAccountResult[0].account_count);
-                                if(checkTenantAccountResult[0].account_count === 0) {
-                                    console.log(getCompanyByTenantResult[0].id ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
-                                    const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, createCompanyResultt.insertId, getUserByUserEmailResult.id,"xero");
-                                }
-                            }
 
 
                             //Get Expense on company add function
@@ -736,27 +829,7 @@ module.exports = {
                                 }
                             }
 
-                            //Get Departments on company add function
-                            const orderDep = 'Name ASC';
-                            const includeArchivedDep = true;
-                            const responseDep = await xero.accountingApi.getTrackingCategories(tenant.tenantId,  null, orderDep, includeArchivedDep);
-                            console.log("result:::",responseDep.body.trackingCategories.length)
-                            if(responseDep.body.trackingCategories.length>0) {
-                                for(const Department of responseDep.body.trackingCategories[0].options) {
-                                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.trackingOptionID,getCompanyByTenantResult[0].id);
-                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                        console.log("Depart id",Department.trackingOptionID);
-                                        console.log("Name",Department.name);
-                                        console.log("Status",Department.status);
-                                        console.log()
-                                        const addDepartmentResult = addDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0,createCompanyResultt.insertId, getUserByUserEmailResult.id,0);
-                                    }
-                                    else {
-                                        console.log("depart found")
-                                        const updateDepartmentResult = updateDepartment(Department.trackingOptionID, Department.name,null,Department.status==="ACTIVE"?1:0, createCompanyResultt.insertId,0);
-                                    }
-                                }
-                            }
+
                         }
                     }
                     // const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
@@ -774,7 +847,7 @@ module.exports = {
                     const activateCompanyResult = await activateCompany(getCompanyByTenantResultt[0].id);
 
                     // console.log("token",token);
-                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token);
+                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token + `/sign_in`);
                 }
             }
             else {
@@ -1084,7 +1157,7 @@ module.exports = {
                             console.log("GETED DEPART", gdpart);
                             console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
                         }
-                        const addExpenseResult = await addXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount,company_id, user_id)
+                        const addExpenseResult = await addXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null,vn[0].vendor_id!==undefined?vn[0].vendor_id:null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount,company_id, user_id)
                     }
                     else {
                         console.log("FOUND-------------------update:",Expense);
@@ -1097,7 +1170,7 @@ module.exports = {
                             console.log("category",Expense.lineItems[0].tracking.length>0?Expense.lineItems[0].tracking[0]:null)
                         }
                         // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
-                        const updateExpenseResult = await updateXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount,company_id, user_id)
+                        const updateExpenseResult = await updateXeroExpense(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null,vn[0].vendor_id!==undefined?vn[0].vendor_id:null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[0].accountCode,null,Expense.lineItems[0].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[0].unitAmount,company_id, user_id)
                         // console.log()
                     }
 
@@ -1106,18 +1179,32 @@ module.exports = {
                         // console.log("aaa");
                         try {
                             const responseAttachment = await xero.accountingApi.getInvoiceAttachments(record[0].tenant_id, Expense.invoiceID);
-                            console.log(responseAttachment.body.attachments[0]);
-                            let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
-                            if(checkAttachableResult[0].attach_count === 0) {
-                                // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
-                                let addAttachableResult = await addAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                                console.log("attachable inserted",Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            // console.log(responseAttachment.body.attachments[0]);
+                            // let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
+                            // if(checkAttachableResult[0].attach_count === 0) {
+                            //     // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                            //     let addAttachableResult = await addAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            //     console.log("attachable inserted",Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            // }
+                            // else {
+                            //     let updateAttachableResult = await updateAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                            // }
+                            // // console.log("aaa1");
+                            // console.log("attachment:::",responseAttachment.body.attachments)
+                            for (let i=0;i<responseAttachment.body.attachments.length;i++) {
+                                console.log("attachment",i);
+                                console.log("attachment:::",responseAttachment.body.attachments[i])
+                                let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[i].attachmentID,Expense.invoiceID);
+                                if(checkAttachableResult[0].attach_count === 0) {
+                                    // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                                    let addAttachableResult = await addAttachable(Expense.invoiceID,  company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                    console.log("attachable inserted",Expense.invoiceID,  company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                }
+                                else {
+                                    let updateAttachableResult = await updateAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                }
+
                             }
-                            else {
-                                let updateAttachableResult = await updateAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
-                            }
-                            // console.log("aaa1");
-                            console.log("attachment:::",responseAttachment.body.attachments)
                         }
                         catch (e) {
                             console.log("Error",e);
@@ -1224,8 +1311,22 @@ module.exports = {
             console.log("attach_id",attach_id);
             console.log("user_id",user_id);
             // const company_id = req.params.company_id;
-            const record = await getActivateCompany(user_id);
-            const user = await getUserById(user_id);
+            const userData = await getUserById(user_id);
+            let record;
+            let user;
+            if(userData[0].role_id === 1) {
+                user = await getUserById(user_id);
+                record = await getActivateCompany(user_id);
+            }
+            else {
+                record = await getCompanyById(userData[0].company_id);
+                user = await getUserById(userData[0].created_by);
+            }
+
+            console.log("userData",userData)
+            console.log("user",user)
+            console.log("record",record)
+
             const attachment = await getAttachment(attach_id);
             console.log(record);
             // console.log(user);

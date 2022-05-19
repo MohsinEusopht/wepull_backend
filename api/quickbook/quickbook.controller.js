@@ -590,7 +590,7 @@ module.exports = {
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
 
                             console.log("Sign up Working");
-                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token);
+                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
                         }
                         else {
 
@@ -867,14 +867,14 @@ module.exports = {
                                 //update all data while login
                                 console.log("Login as ", getCompanyByTenantResult[0].id);
                                 //Get Accounts
-                                for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
-                                    const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
-                                    // console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
-                                    if(checkTenantAccountResult[0].account_count === 0) {
-                                        console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
-                                        const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
-                                    }
-                                }
+                                // for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
+                                //     const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
+                                //     // console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
+                                //     if(checkTenantAccountResult[0].account_count === 0) {
+                                //         console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                //         const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                //     }
+                                // }
 
                                 const Attachables = [];
                                 //Get Expenses
@@ -1007,7 +1007,7 @@ module.exports = {
                                 //Get Departments
 
                                 //Comment
-                                console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
+                                // console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
                                 // if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
                                 //     for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
                                 //         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,getCompanyByTenantResult[0].id);
@@ -1064,24 +1064,24 @@ module.exports = {
 
                                 //Get vendors
                                 //Comment
-                                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                        const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
-                                        if(checkTenantVendorResult[0].vendor_count === 0) {
-                                            // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                            // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                            // console.log("address",address);
-                                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            console.log("added");
-                                        }
-                                        else {
-                                            console.log("found ",Vendor.Id._text);
-                                            const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            console.log("updated");
-                                        }
-                                    }
-                                }
+                                // if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                //     for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                //         const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
+                                //         if(checkTenantVendorResult[0].vendor_count === 0) {
+                                //             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                //             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                //             // console.log("address",address);
+                                //             console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                //             const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                //             console.log("added");
+                                //         }
+                                //         else {
+                                //             console.log("found ",Vendor.Id._text);
+                                //             const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                //             console.log("updated");
+                                //         }
+                                //     }
+                                // }
 
                                 const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
                                 console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
@@ -1091,7 +1091,7 @@ module.exports = {
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
                             console.log("updateCompanyTokenResult");
                             console.log("Login Working");
-                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token);
+                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
                         }
                     }
                     else {

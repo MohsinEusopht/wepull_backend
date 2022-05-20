@@ -423,6 +423,25 @@ module.exports = {
                         }
 
 
+                    let transporter = nodemailer.createTransport({
+                        service: 'Gmail',
+                        auth: {
+                            user: 'mohjav031010@gmail.com',
+                            pass: 'Javed@0348'
+                        }
+                    });
+
+                    let mailOptions = {
+                        from: 'no-reply@wepull.io',
+                        to: email,
+                        subject: 'WePull Account Creation',
+                        html: "<p>We have successfully pulled all your data from xero and your account is ready to be in use.</p>" +
+                              "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
+                    };
+
+                    await transporter.sendMail(mailOptions);
+
+
 
                     // const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
                     const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId)

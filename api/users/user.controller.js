@@ -264,10 +264,10 @@ module.exports = {
                 });
 
                 let mailOptions = {
-                    from: 'mohjav031010@gmail.com',
+                    from: 'no-reply@wepull.io',
                     to: body.email,
-                    subject: 'Wepull Account Setup',
-                    html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
+                    subject: 'WePull Account Setup',
+                    html: "Welcome to WePull,<br/> Please setup your account detail at: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
                 };
 
                 // let transporter = nodemailer.createTransport({

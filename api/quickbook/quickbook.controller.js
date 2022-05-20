@@ -589,6 +589,24 @@ module.exports = {
                             await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
                             await activeQuickbookAccount(jwtTokenDecode.realmid);
 
+                            let transporter = nodemailer.createTransport({
+                                service: 'Gmail',
+                                auth: {
+                                    user: 'mohjav031010@gmail.com',
+                                    pass: 'Javed@0348'
+                                }
+                            });
+
+                            let mailOptions = {
+                                from: 'no-reply@wepull.io',
+                                to: userArray.email,
+                                subject: 'WePull Account Creation',
+                                html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
+                                    "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
+                            };
+
+                            await transporter.sendMail(mailOptions);
+
                             console.log("Sign up Working");
                             res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
                         }

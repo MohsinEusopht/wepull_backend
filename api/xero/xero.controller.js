@@ -1413,11 +1413,21 @@ module.exports = {
                         let city = Contact.addresses[0].city;
                         let postalCode = Contact.addresses[0].postalCode;
                         let country = Contact.addresses[0].country;
-                        let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
-                        let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                        let contact = null;
+                        let mobile = null;
+                        if(Contact.contactNumber === undefined) {
+                            contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
+                            mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                        }
+                        else {
+                            contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneAreaCode + Contact.phones[1].phoneNumber:null;
+                            mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneAreaCode + Contact.phones[3].phoneNumber:null;
+                        }
+
                         let website = Contact.website!==undefined?Contact.website:null;
                         let balance = Contact.balances!==undefined?Contact.balances:null;
                         let date = Contact.updatedDateUTC;
+                        console.log(Contact)
                         console.log(vendor_id);
                         console.log(name);
                         console.log(status);
@@ -1425,7 +1435,9 @@ module.exports = {
                         console.log(email);
                         console.log(address!==""?address:null);
                         console.log(contact);
+                        console.log("Contact",Contact.phones[1])
                         console.log(mobile);
+                        console.log("Mobile",Contact.phones[3])
                         console.log(website);
                         console.log(null);
                         console.log(date);

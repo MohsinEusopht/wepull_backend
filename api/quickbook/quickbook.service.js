@@ -219,7 +219,7 @@ module.exports = {
     updateAttachable: (expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at) => {
     return new Promise((resolov, reject) => {
         pool.query(
-            `UPDATE attachables SET file_name = ?, download_url = ?, file_size = ?, attach_id = ?, created_at = ?, updated_at = ? WHERE expense_id = ? and company_id = ?`, [file_name, download_url, file_size, attach_id, created_at, updated_at, expense_id, company_id],
+            `UPDATE attachables SET file_name = ?, download_url = ?, file_size = ?, attach_id = ?, created_at = ?, updated_at = ? WHERE expense_id = ? and company_id = ? and attach_id = ?`, [file_name, download_url, file_size, attach_id, created_at, updated_at, expense_id, company_id, attach_id],
             (error, results, fields) => {
                 if (error) {
                     console.log(error);

@@ -12,11 +12,15 @@ const {
     syncExpenses,
     syncDepartments,
     viewAttachment,
-    syncVendors
+    syncVendors,
+    xero_callback_sign_up
 } = require("./xero.controller");
 
-router.get("/xero_url",xero_url);
+// router.get("/xero_check_login",xero_check_login);
+router.get("/xero_url/:login_type",xero_url);
+// router.get("")
 router.get("/xero_callback", xero_callback);
+router.get("/xero_callback_sign_up", xero_callback_sign_up);
 router.get("/xero_refresh_token/:email", xero_refresh_token_function);
 router.get('/xero_get_tenants',validateAdminPermission, xero_get_tenants);
 router.post("/xero_login", xero_login);

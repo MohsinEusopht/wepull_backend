@@ -55,7 +55,7 @@ const parseString = require('xml2js').parseString;
 // const {createCompany} = require("../users/user.service");
 // const {createUserRole} = require("../users/user.service");
 // const {updateUserCompany} = require("../users/user.service");
-
+const nodemailer = require("nodemailer");
 
 let oauth2_token_json = null;
 let redirectUri = '';

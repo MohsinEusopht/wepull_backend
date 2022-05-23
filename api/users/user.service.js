@@ -352,6 +352,19 @@ module.exports = {
             );
         })
     },
+    checkUserCompanyByTenant: (tenant_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT count(*) as count_company FROM companies where tenant_id = ?`, [tenant_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     deleteUser: (id) => {
         return new Promise((resolov, reject) => {
             pool.query(
@@ -724,6 +737,20 @@ module.exports = {
             );
         })
     },
+    updateTenantAccount: (code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE accounts SET code = ?, accountID = ?, name = ?, type = ?, status = ?, description = ?, currencyCode = ?, updatedDateUT = ? company_id = ? and user_id = ?`, [code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        console.log(error);
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     getAccounts: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
@@ -1085,6 +1112,19 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT * FROM users WHERE id = ?`, [id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getUserByEmail: (email) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT * FROM users WHERE email = ?`, [email],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

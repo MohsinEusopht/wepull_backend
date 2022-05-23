@@ -279,14 +279,7 @@ module.exports = {
 
             const checkUserQuickbookResult = await checkUserQuickbook(email);
 
-            for (const tenant of tenantArray) {
-                const checkUserCompanyResult = await checkUserCompanyByTenant(tenant.tenantId);
-                if(checkUserCompanyResult[0].count_company === 0) {
-                    let consentUrl = await xero.buildConsentUrl();
-                    // console.log("eerror");
-                    res.redirect(consentUrl);
-                }
-            }
+
 
             console.log("checkUserEmailResult[0].count_user",checkUserEmailResult[0].count_user);
             // this.exit();
@@ -295,17 +288,21 @@ module.exports = {
                 // scope = ;
                 console.log("login_type",login_type);
                 if(login_type === "sign_up" || login_type === "connect") {
-                    let consentUrl = await xero.buildConsentUrl();
-                    // console.log("eerror");
-                    res.redirect(consentUrl);
+                    for (const tenant of tenantArray) {
+                        const checkUserCompanyResult = await checkUserCompanyByTenant(tenant.tenantId);
+                        if(checkUserCompanyResult[0].count_company === 0) {
+                            let consentUrl = await xero.buildConsentUrl();
+                            // console.log("eerror");
+                            res.redirect(consentUrl);
+                        }
+                    }
                 }
-                else {
+                else if(login_type === "sign_in") {
                     res.redirect(`${process.env.APP_URL}login/error/404`);
                 }
-
             }
             else {
-                if (login_type == "connect") {
+                if (login_type === "connect") {
                     res.redirect(`${process.env.APP_URL}login/info/404`);
                 }
                 else {
@@ -1576,29 +1573,42 @@ module.exports = {
                 }
 
                 //Get Accounts
-                try {
+                // try {
                     //getting all account by tenant id
-                    const response = await xero.accountingApi.getAccounts(tenant.tenantId, null, null, order);
+                    const Aorder = 'Name ASC';
+                    const responseAccount = await xero.accountingApi.getAccounts(tenant.tenantId, null, null, Aorder);
                     // console.log(typeof response.body.accounts);
-                    let res = response.body.accounts;
+                    let res = responseAccount.body.accounts;
                     for (const Account of res) {
-                        console.log("Company ID:",createCompanyResult.insertId, "Account ID: ", Account.accountID);
+                        console.log("Company ID:",company_id, "Account ID: ", Account.accountID);
 
                         //Check if tenant account already exist
                         const checkTenantAccountResult = await checkTenantAccount(Account.accountID,company_id);
                         console.log("count:",checkTenantAccountResult[0].account_count);
                         if(checkTenantAccountResult[0].account_count === 0) {
-                            console.log(createCompanyResult.insertId ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
+                            console.log("Creating account",Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, company_id, user_id,"xero");
                             const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, company_id, user_id,"xero");
+                            console.log("Account Created", createTenantAccountResult.insertId);
                         }
                         else {
                             const updateTenantAccountResult = await updateTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, company_id, user_id);
+                            console.log("FOUND:",company_id ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
                         }
+                        // //Check if tenant account already exist
+                        // const checkTenantAccountResult = await checkTenantAccount(Account.accountID,company_id);
+                        // console.log("count:",checkTenantAccountResult[0].account_count);
+                        // if(checkTenantAccountResult[0].account_count === 0) {
+                        //     console.log(createCompanyResult.insertId ,Account.code, Account.accountID, Account.name, Account.type, Account.status, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC);
+                        //     const createTenantAccountResult = await createTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, company_id, user_id,"xero");
+                        // }
+                        // else {
+                        //     const updateTenantAccountResult = await updateTenantAccount(Account.code, Account.accountID, Account.name, Account.type, Account.status=="ACTIVE"?1:0, Account.description, Account.currencyCode==undefined?null:Account.currencyCode, Account.updatedDateUTC, company_id, user_id);
+                        // }
                     }
-                } catch (err) {
-                    const error = JSON.stringify(err.response, null, 2)
-                    console.log(`Status Code: ${err.response} => ${error}`);
-                }
+                // } catch (err) {
+                //     const error = JSON.stringify(err.response, null, 2)
+                //     console.log(`Status Code: ${err.response} => ${error}`);
+                // }
 
                 //Get Vendor
 

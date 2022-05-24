@@ -1,6 +1,7 @@
 const {hashSync,genSaltSync,compareSync} = require("bcrypt");
 const crypto = require('crypto');
 const nodemailer = require("nodemailer");
+const {supplierCount} = require("./user.service");
 const {
     createCompany,
     signUp,
@@ -73,7 +74,8 @@ const {
     getQuickbookExpenseByCategory,
     getXeroExpenseByCategory,
     getQuickbookExpenseByCategoryAndVendor,
-    getXeroExpenseByCategoryAndVendor
+    getXeroExpenseByCategoryAndVendor,
+    getAllCompanies
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -173,6 +175,7 @@ module.exports = {
             const body = req.body;
             const results = await getUserByUserEmail(body.email);
 
+            console.log("results",results);
             results.password = results.password.replace(/^\$2y(.+)$/i, '$2a$1');
             const result = compareSync(body.password, results.password);
 
@@ -180,25 +183,42 @@ module.exports = {
                 results.password = undefined;
                 // const startTime = await setUserStartTime(results.id);
                 const record = await getUser(results.id);
+                console.log("user",record);
 
-                const depart = await getDepartOfUser(results.id);
+                if(record[0].role_id === 5) {
 
-                const disableAllCompanyResult = await disableAllDepart(results.id);
-                console.log("disableAllCompanyResult",disableAllCompanyResult);
-                console.log("depart",depart[0]);
-                const activateCompanyResult = await activateDepart(depart[0].id, results.id);
+                    record[0].password = undefined;
+                    console.log("getuser::",record[0]);
+                    const json_token = sign({ result: results }, process.env.JWT_KEY);
+                    return res.json({
+                        success: 1,
+                        message: "login successfully",
+                        token: json_token,
+                        data: record[0],
+                        // data: results,
+                    });
+                }
+                else {
+                    const depart = await getDepartOfUser(results.id);
+
+                    const disableAllCompanyResult = await disableAllDepart(results.id);
+                    console.log("disableAllCompanyResult",disableAllCompanyResult);
+                    console.log("depart",depart[0]);
+                    const activateCompanyResult = await activateDepart(depart[0].id, results.id);
 
 
-                record[0].password = undefined;
-                console.log("getuser::",record[0]);
-                const json_token = sign({ result: results }, process.env.JWT_KEY);
-                return res.json({
-                    success: 1,
-                    message: "login successfully",
-                    token: json_token,
-                    data: record[0],
-                    // data: results,
-                });
+                    record[0].password = undefined;
+                    console.log("getuser::",record[0]);
+                    const json_token = sign({ result: results }, process.env.JWT_KEY);
+                    return res.json({
+                        success: 1,
+                        message: "login successfully",
+                        token: json_token,
+                        data: record[0],
+                        // data: results,
+                    });
+                }
+
             } else {
                 return res.status(404).json({
                     success: 0,
@@ -534,6 +554,20 @@ module.exports = {
             const category_id = req.params.category_id;
             const vendor_id = req.params.vendor_id;
             const record = await getXeroExpenseByCategoryAndVendor(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getAllCompanies: async(req, res) => {
+        try {
+            const record = await getAllCompanies();
             return res.json({
                 success: 1,
                 data: record
@@ -1160,9 +1194,9 @@ module.exports = {
     getCounts: async(req, res) => {
         try {
             console.log("working");
-            const user_id = req.params.user_id;
+            // const user_id = req.params.user_id;
             const company_id = req.params.company_id;
-            console.log(user_id);
+            // console.log(user_id);
             console.log(company_id);
             // const company_count = await getCompanyCount(user_id);
             // const depart_count = await departmentCount(user_id);
@@ -1170,21 +1204,24 @@ module.exports = {
             // const account_count = await accountCount(user_id);
             // const expense_count = await expenseCount(user_id);
 
-            const company_count = await getCompanyCount(user_id, company_id);
-            const depart_count = await departmentCount(user_id, company_id);
-            const user_count = await userCount(user_id, company_id);
-            const account_count = await accountCount(user_id, company_id);
-            const expense_count = await expenseCount(user_id, company_id);
+            const company_count = await getCompanyCount(company_id);
+            const depart_count = await departmentCount(company_id);
+            const user_count = await userCount(company_id);
+            const account_count = await accountCount(company_id);
+            const expense_count = await expenseCount(company_id);
+            const supplier_count = await supplierCount(company_id);
 
 
             // // const record = await getActivateCompany(user_id);
             return res.json({
                 success: 1,
+                company_id: company_id,
                 company_count: company_count,
                 depart_count: depart_count,
                 user_count: user_count,
                 account_count: account_count,
-                expense_count: expense_count
+                expense_count: expense_count,
+                supplier_count: supplier_count,
             });
         } catch (e) {
             return res.status(404).json({

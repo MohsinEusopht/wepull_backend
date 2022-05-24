@@ -1004,10 +1004,10 @@ module.exports = {
             );
         })
     },
-    getCompanyCount: (user_id, company_id) => {
+    getAllCompanies: ()=> {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT count(*) as count FROM companies WHERE user_id = ?`, [user_id],
+                `SELECT * FROM companies`, [],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1017,7 +1017,20 @@ module.exports = {
             );
         })
     },
-    departmentCount: (user_id, company_id) => {
+    getCompanyCount: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT count(*) as count FROM companies WHERE id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    departmentCount: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT count(*) as count FROM departments WHERE company_id = ?`, [company_id],
@@ -1030,7 +1043,7 @@ module.exports = {
             );
         })
     },
-    userCount: (user_id, company_id) => {
+    userCount: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT count(*) as count FROM users WHERE company_id = ?`, [company_id],
@@ -1056,7 +1069,7 @@ module.exports = {
             );
         })
     },
-    accountCount: (user_id, company_id) => {
+    accountCount: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT count(*) as count FROM accounts WHERE company_id = ?`, [company_id],
@@ -1082,10 +1095,23 @@ module.exports = {
             );
         })
     },
-    expenseCount: (user_id, company_id) => {
+    expenseCount: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `SELECT sum(total_amount) as count FROM expenses WHERE company_id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    supplierCount: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT count(*) as count FROM vendors WHERE company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

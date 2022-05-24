@@ -280,7 +280,7 @@ module.exports = {
             const checkUserQuickbookResult = await checkUserQuickbook(email);
 
 
-
+            console.log("TTTTTT",tenantArray);
             console.log("checkUserEmailResult[0].count_user",checkUserEmailResult[0].count_user);
             // this.exit();
             if(checkUserEmailResult[0].count_user === 0) {
@@ -303,7 +303,17 @@ module.exports = {
             }
             else {
                 if (login_type === "connect") {
-                    res.redirect(`${process.env.APP_URL}login/info/404`);
+                    for (const tenant of tenantArray) {
+                        const checkUserCompanyResult = await checkUserCompanyByTenant(tenant.tenantId);
+                        if(checkUserCompanyResult[0].count_company === 0) {
+                            let consentUrl = await xero.buildConsentUrl();
+                            // console.log("eerror");
+                            res.redirect(consentUrl);
+                        }
+                        else {
+                            res.redirect(`${process.env.APP_URL}login/info/404`);
+                        }
+                    }
                 }
                 else {
                     console.log("User Email",email);

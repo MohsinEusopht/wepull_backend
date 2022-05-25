@@ -277,7 +277,7 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 // `SELECT u.id,u.first_name,u.last_name,u.email,u.contact,r.name as 'role',d.depart_name FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id LEFT JOIN departments d ON ur.depart_id=d.id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
-                `select * from vendors where company_id = ?`, [company_id],
+                `select * from vendors where company_id = ? and status = 1`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

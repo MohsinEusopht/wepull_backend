@@ -243,6 +243,8 @@ module.exports = {
         // console.log("GU")
         // login_type = req.params.login_type;
         // console.log(login_type);
+
+        console.log("comes to xero sign up url route");
         let consentUrl = await xero.buildConsentUrl();
         // console.log("eerror");
         res.redirect(consentUrl);

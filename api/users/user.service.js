@@ -740,7 +740,7 @@ module.exports = {
     updateTenantAccount: (code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE accounts SET code = ?, accountID = ?, name = ?, type = ?, status = ?, description = ?, currencyCode = ?, updatedDateUT = ? company_id = ? and user_id = ?`, [code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, user_id],
+                `UPDATE accounts SET code = ?, accountID = ?, name = ?, type = ?, status = ?, description = ?, currencyCode = ?, updatedDateUTC = ? where company_id = ? and accountID = ?`, [code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, accountID],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

@@ -236,6 +236,17 @@ module.exports = {
         // console.log("eerror");
         res.redirect(consentUrl);
     },
+    xero_url_sign_up: async (req, res) => {
+        // const getUserResult = await getUser();
+        // console.log("GU")
+        // console.log(getUserResult);
+        // console.log("GU")
+        // login_type = req.params.login_type;
+        // console.log(login_type);
+        let consentUrl = await xero.buildConsentUrl();
+        // console.log("eerror");
+        res.redirect(consentUrl);
+    },
     xero_callback: async (req, res) => {
         // await xero.initialize();
         try {
@@ -303,17 +314,18 @@ module.exports = {
             }
             else {
                 if (login_type === "connect") {
-                    for (const tenant of tenantArray) {
-                        const checkUserCompanyResult = await checkUserCompanyByTenant(tenant.tenantId);
-                        if(checkUserCompanyResult[0].count_company === 0) {
+                    // for (const tenant of tenantArray) {
+                    //     const checkUserCompanyResult = await checkUserCompanyByTenant(tenant.tenantId);
+                    //     console.log("Tenant",tenant.tenantId,"Company count", checkUserCompanyResult[0].count_company)
+                    //     if(checkUserCompanyResult[0].count_company === 0) {
                             let consentUrl = await xero.buildConsentUrl();
                             // console.log("eerror");
                             res.redirect(consentUrl);
-                        }
-                        else {
-                            res.redirect(`${process.env.APP_URL}login/info/404`);
-                        }
-                    }
+                    //     }
+                    //     // else {
+                    //     //     res.redirect(`${process.env.APP_URL}login/info/404`);
+                    //     // }
+                    // }
                 }
                 else {
                     console.log("User Email",email);
@@ -754,20 +766,39 @@ module.exports = {
                     // }
                     // const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
 
-                    //disable all active company
-                    const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
 
-                    const getCompanyByTenantResultt = await getCompanyByTenant(tenantArray[0].tenantId);
 
-                    console.log("disable all company of",getUserByUserEmailResult.id);
-                    console.log("company data",getCompanyByTenantResultt);
-                    // console.log("active tenant",getCompanyByTenantResultt);
+                    console.log("check tnt ",tenantArray);
+                    if(tenantArray.length>0) {
+                        //disable all active company
+                        const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
+                        const getCompanyByTenantResultt = await getCompanyByTenant(tenantArray[0].tenantId);
+                        console.log("disable all company of",getUserByUserEmailResult.id);
+                        console.log("company data",getCompanyByTenantResultt);
+                        // console.log("active tenant",getCompanyByTenantResultt);
 
-                    //enable first existing company
-                    const activateCompanyResult = await activateCompany(getCompanyByTenantResultt[0].id);
+                        //enable first existing company
+                        const activateCompanyResult = await activateCompany(getCompanyByTenantResultt[0].id);
+                        // console.log("token",token);
+                        res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token + `/sign_in`);
+                    }
+                    else {
+                        // console.log("else disable all")
+                        // const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
+                        // console.log("getCompanyResult[0].id",getCompanyResult[0].id)
+                        // const activateCompanyResult = await activateCompany(getCompanyResult[0].id);
 
-                    // console.log("token",token);
-                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token + `/sign_in`);
+
+                        res.redirect(`${process.env.APP_URL}account/disconnected`);
+
+                        // let consentUrl = await xero.buildConsentUrl();
+                        // // console.log("eerror");
+                        // res.redirect(consentUrl);
+                    }
+
+
+
+
                 }
             }
             // this.exit();
@@ -1556,6 +1587,7 @@ module.exports = {
                 user_id = createUsersResult.insertId;
             }
             else {
+                const updateLoginTokenResult = await updateXeroLoginToken(email, token, xero_id_token, xero_access_token, xero_refresh_token, xero_expire_at);
                 const getUserByEmailResult = await getUserByEmail(email);
                 user_id = getUserByEmailResult[0].id;
             }
@@ -1833,18 +1865,20 @@ module.exports = {
                     "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
             };
 
-            await transporter.sendMail(mailOptions);
+            // await transporter.sendMail(mailOptions);
 
 
-            // const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
-            const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId)
+            const disableAllCompanyResult = await disableAllCompany(user_id);
+            const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId);
             const activateCompanyResult = await activateCompany(getCompanyByTenantResult[0].id);
             // const updateUserCompanyResult = await updateUserCompany(user_id, company_id);
+            console.log("HEREEEEEEEEEEEE")
             res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/0/`+ token + `/sign_up`);
             // }
         }
         catch (err) {
             console.log(err);
+            console.log("ERORRRRRRRRRRRRR")
             res.redirect(`${process.env.APP_URL}login`);
         }
     },

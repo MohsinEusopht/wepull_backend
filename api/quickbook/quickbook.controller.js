@@ -56,6 +56,8 @@ const parseString = require('xml2js').parseString;
 // const {createUserRole} = require("../users/user.service");
 // const {updateUserCompany} = require("../users/user.service");
 const nodemailer = require("nodemailer");
+const {updateXeroAccountEmail} = require("../users/user.service");
+const {checkUserCompanyByTenant} = require("../users/user.service");
 
 let oauth2_token_json = null;
 let redirectUri = '';
@@ -154,7 +156,7 @@ async function get_accounts(access_token, companyID) {
         request(options, function (error, res, body) {
             if (!error && res.statusCode == 200) {
                 let result = convert.xml2json(body, {compact: true, spaces: 4});
-                console.log("account result" ,result);
+                // console.log("account result" ,result);
                 resolve(result);
             } else {
                 reject(error);
@@ -362,6 +364,7 @@ async function getAttachable(access_token, companyID, expense_id) {
 }
 
 
+let login_type = null;
 
 module.exports = {
     quickbooks_url: async (req, res) => {
@@ -370,6 +373,9 @@ module.exports = {
             state:'testState'
         });
 
+        login_type = req.params.login_type;;
+
+        console.log("Loign tpye",login_type);
         // can be an array of multiple scopes ex : {scope:[OAuthClient.scopes.Accounting,OAuthClient.scopes.OpenId]}
         res.redirect(authUri);
     },
@@ -430,66 +436,139 @@ module.exports = {
                     // document.write();
 
                     if(checkUserXeroResult[0].count_xero==0) {
-                        if(checkUserEmailResult[0].count_user==0) {
-
-                            let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
-
-                            let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
-                            let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
-
-                            const token = crypto.randomBytes(48).toString('hex');
-                            const createUsersResult = await qbSignUp(userArray.givenName, userArray.familyName, userArray.email,userArray.phoneNumber, qb_access_token, qb_refresh_token, expire_at, token);
-                            const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
-                            // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
-                            const createUserRoleResult = await createUserRole(createUsersResult.insertId, createCompanyResult.insertId, null, 1, null);
-                            // const updateUserCompanyResult =
-                            const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                        if(login_type === "sign_in") {
+                            const checkUserEmailResult = await checkUserEmail(userArray.email);
                             const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
-                            //Get Accounts of tenant
-                            try {
-                                for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
-                                    const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
-                                    console.log("account id:",Account.accountID,"company id:",getCompanyByTenantResult[0].id,"count:",checkTenantAccountResult[0].account_count);
-                                    if(checkTenantAccountResult[0].account_count === 0) {
-                                        console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
-                                        const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                            console.log("getCompanyByTenantResult",getCompanyByTenantResult.length);
+                            if(getCompanyByTenantResult.length>0) {
+                                if(checkUserEmailResult[0].count_user === 0) {
+                                    const checkUserCompanyResultt = await checkUserCompanyByTenant(jwtTokenDecode.realmid);
+                                    console.log("checkUserCompanyResult[0].count_company",checkUserCompanyResultt[0].count_company);
+                                    if (checkUserCompanyResultt[0].count_company === 1) {
+                                        // const checkUserEmailResultt = await checkUserEmail(email);
+                                        // if(checkUserCompanyResultt.count_user === 0) {
+                                        const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid);
+                                        console.log(getCompanyByTenantResult[0].user_id)
+                                        const updateXeroAccountEmailResult = await updateXeroAccountEmail(getCompanyByTenantResult[0].user_id, userArray.email);
+
+                                        console.log("User Email",userArray.email);
+                                        // console.log("User first_name",first_name);
+                                        // console.log("User last_name",last_name);
+                                        // console.log("User name",name);
+                                        console.log("direct login");
+                                        const token = crypto.randomBytes(48).toString('hex');
+                                        const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
+                                        const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                        const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                                        await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                        await activeQuickbookAccount(jwtTokenDecode.realmid);
+
+                                        // {
+                                        //     "Name": "IndustryType",
+                                        //     "Value": "Electronic computer manufacturing"
+                                        // },
+                                        // {
+                                        //     "Name": "CompanyType",
+                                        //     "Value": "Sole Proprietor"
+                                        // }
+                                        let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
+
+                                        let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
+                                        let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
+
+                                        const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                        console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text)
+                                        // console.log("IndustryType",IndustryType);
+                                        // console.log("CompanyType",CompanyType);
+                                        // console.log("CompanyType",CompanyType[0].Value._text);
+                                        console.log("updateCompanyTokenResult");
+                                        console.log("Login Working");
+                                        res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                        // }
+                                    }
+                                    else {
+                                        res.redirect(`${process.env.APP_URL}login/error/404`);
                                     }
                                 }
-                            } catch (err) {
-                                const error = JSON.stringify(err.response, null, 2)
-                                console.log(`Status Code: ${err.response} => ${error}`);
+                                else {
+                                    //Login execution
+                                    const token = crypto.randomBytes(48).toString('hex');
+                                    const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
+                                    const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                                    const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
+                                    console.log("compny lenght:",getCompanyByTenantResult.length);
+                                    console.log("compny:",getCompanyByTenantResult);
+
+                                    // {
+                                    //     "Name": "IndustryType",
+                                    //     "Value": "Electronic computer manufacturing"
+                                    // },
+                                    // {
+                                    //     "Name": "CompanyType",
+                                    //     "Value": "Sole Proprietor"
+                                    // }
+                                    let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
+
+                                    let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
+                                    let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
+                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                    console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
+
+                                    const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                    await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                    await activeQuickbookAccount(jwtTokenDecode.realmid);
+                                    console.log("updateCompanyTokenResult");
+                                    console.log("Login Working");
+                                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                }
                             }
-                            //Get Expense of tenant
+                            else {
+                                console.log("company_not_exist");
+                                res.redirect(`${process.env.APP_URL}login/error/company_not_exist`);
+                            }
+                        }
+                        else if(login_type === "sign_up" || login_type === "connect") {
+                            if(checkUserEmailResult[0].count_user==0) {
 
-                            const Attachables = [];
-                            // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                            for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                                if(Expense.Line.length===undefined) {
-                                    let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                    let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                    let com = c + " - " + d;
-                                    console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                                    if (Expense.PaymentType._text === "CreditCard") {
-                                        const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                        console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
+
+                                let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
+                                let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
+
+                                const token = crypto.randomBytes(48).toString('hex');
+                                const createUsersResult = await qbSignUp(userArray.givenName, userArray.familyName, userArray.email,userArray.phoneNumber, qb_access_token, qb_refresh_token, expire_at, token);
+                                const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
+                                // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
+                                const createUserRoleResult = await createUserRole(createUsersResult.insertId, createCompanyResult.insertId, null, 1, null);
+                                // const updateUserCompanyResult =
+                                const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                                const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
+                                //Get Accounts of tenant
+                                try {
+                                    for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
+                                        const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
+                                        console.log("account id:",Account.accountID,"company id:",getCompanyByTenantResult[0].id,"count:",checkTenantAccountResult[0].account_count);
+                                        if(checkTenantAccountResult[0].account_count === 0) {
+                                            console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                            const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                        }
                                     }
-                                    else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                        const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                        console.log("Expenses Added Cash: ", Expense.Id._text)
-                                    }
+                                } catch (err) {
+                                    const error = JSON.stringify(err.response, null, 2)
+                                    console.log(`Status Code: ${err.response} => ${error}`);
                                 }
-                                else{
-                                    for (let i=0;i<Expense.Line.length;i++) {
-                                        // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                        let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                        let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                        let com = c + " - " + d;
+                                //Get Expense of tenant
 
-                                        console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                        // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                const Attachables = [];
+                                // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                    if(Expense.Line.length===undefined) {
+                                        let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                        let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                        let com = c + " - " + d;
+                                        console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                                         if (Expense.PaymentType._text === "CreditCard") {
-                                            // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                            const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                                            const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
                                             console.log("Expenses Added Credit Card: ", Expense.Id._text)
                                         }
                                         else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
@@ -497,191 +576,191 @@ module.exports = {
                                             console.log("Expenses Added Cash: ", Expense.Id._text)
                                         }
                                     }
-                                }
-
-                                const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
-                                const attachableArray = JSON.parse(getAttachableResult);
-                                // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-                                if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                                    // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                    Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
-
-                                }
-                                else {
-                                    console.log("attachable is undefined");
-                                }
-
-                            }
-
-                            for (const Attachable of Attachables) {
-                                console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
-                                if(checkAttachableResult[0].attach_count === 0) {
-                                    let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                    console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
-                                }
-                                else {
-                                    let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                }
-                            }
-
-                            //Get Departments
-                            if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                    if (Department.SubDepartment._text.toString() === "true") {
-                                        const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                        console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                    } else {
-                                        const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                        console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                    }
-                                }
-                                if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                        // const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
-                                        // if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                        if(Class.SubClass._text.toString() === "true") {
-                                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                            console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                        }
-                                        else {
-                                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                            console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                        }
-                                        // }
-                                        // else {
-                                        //     console.log("Found:", Class.Id._text)
-                                        //     if(Class.SubClass._text.toString() === "true") {
-                                        //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                        //         console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
-                                        //     }
-                                        //     else {
-                                        //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                        //         console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                                        //     }
-                                        // }
-                                    }
-                                }
-                            }
-
-                            //Get vendors
-                            if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                    // const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
-                                    // if(checkTenantVendorResult[0].vendor_count === 0) {
-                                    // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                    // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                    // console.log("address",address);
-                                    console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                    const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                    console.log("added");
-                                    // }
-                                    // else {
-                                    //     console.log("found ",Vendor.Id._text);
-                                    //     const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                    //     console.log("updated");
-                                    // }
-                                }
-                            }
-
-                            const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
-
-                            await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
-                            await activeQuickbookAccount(jwtTokenDecode.realmid);
-
-                            let transporter = nodemailer.createTransport({
-                                service: 'Gmail',
-                                auth: {
-                                    user: 'mohjav031010@gmail.com',
-                                    pass: 'Javed@0348'
-                                }
-                            });
-
-                            let mailOptions = {
-                                from: 'no-reply@wepull.io',
-                                to: userArray.email,
-                                subject: 'WePull Account Creation',
-                                html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
-                                    "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
-                            };
-
-                            await transporter.sendMail(mailOptions);
-
-                            console.log("Sign up Working");
-                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
-                        }
-                        else {
-
-                            //Login execution
-                            const token = crypto.randomBytes(48).toString('hex');
-                            const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
-                            const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
-                            const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
-                            console.log("compny lenght:",getCompanyByTenantResult.length);
-                            console.log("compny:",getCompanyByTenantResult);
-
-                            // {
-                            //     "Name": "IndustryType",
-                            //     "Value": "Electronic computer manufacturing"
-                            // },
-                            // {
-                            //     "Name": "CompanyType",
-                            //     "Value": "Sole Proprietor"
-                            // }
-                            let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
-
-                            let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
-                            let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
-                            console.log("IndustryType",IndustryType);
-                            console.log("CompanyType",CompanyType);
-                            console.log("CompanyType",CompanyType[0].Value._text);
-                            //IF Company do not exist
-                            if(getCompanyByTenantResult.length===0) {
-                                //Create company if not exist
-
-                                const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
-                                // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
-                                const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResult.insertId, null, 1, null);
-                                console.log("Created new company as ", createCompanyResult.insertId);
-                                //Get Accounts
-                                for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
-                                    const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,createCompanyResult.insertId);
-                                    console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
-                                    if(checkTenantAccountResult[0].account_count === 0) {
-                                        console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, createCompanyResult.insertId, getUserByUserEmailResult.id,"quickbooks");
-                                        const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, createCompanyResult.insertId, getUserByUserEmailResult.id,"quickbooks");
-                                    }
-                                }
-                                //Get Expenses
-                                for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                                    const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
-                                    if(checkTenantExpenseResult[0].expense_count === 0) {
-                                        if(Expense.Line.length===undefined) {
-                                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    else{
+                                        for (let i=0;i<Expense.Line.length;i++) {
+                                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                            let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                            let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
                                             let com = c + " - " + d;
-                                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+
+                                            console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
                                             if (Expense.PaymentType._text === "CreditCard") {
-                                                const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                                const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
                                                 console.log("Expenses Added Credit Card: ", Expense.Id._text)
                                             }
                                             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                                const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
                                                 console.log("Expenses Added Cash: ", Expense.Id._text)
                                             }
                                         }
-                                        else{
-                                            for (let i=0;i<Expense.Line.length;i++) {
-                                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                                let com = c + " - " + d;
+                                    }
 
-                                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                    const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
+                                    const attachableArray = JSON.parse(getAttachableResult);
+                                    // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                                    if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                                        // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+
+                                    }
+                                    else {
+                                        console.log("attachable is undefined");
+                                    }
+
+                                }
+
+                                for (const Attachable of Attachables) {
+                                    console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                    let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                                    if(checkAttachableResult[0].attach_count === 0) {
+                                        let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                        console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                                    }
+                                    else {
+                                        let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                    }
+                                }
+
+                                //Get Departments
+                                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                    for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                        if (Department.SubDepartment._text.toString() === "true") {
+                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                            console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                        } else {
+                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                            console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                        }
+                                    }
+                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                            // const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                                            // if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                            if(Class.SubClass._text.toString() === "true") {
+                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                            }
+                                            else {
+                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                            }
+                                            // }
+                                            // else {
+                                            //     console.log("Found:", Class.Id._text)
+                                            //     if(Class.SubClass._text.toString() === "true") {
+                                            //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                            //         console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                                            //     }
+                                            //     else {
+                                            //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                            //         console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                            //     }
+                                            // }
+                                        }
+                                    }
+                                }
+
+                                //Get vendors
+                                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                        // const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
+                                        // if(checkTenantVendorResult[0].vendor_count === 0) {
+                                        // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                        // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                        // console.log("address",address);
+                                        console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                        const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                        console.log("added");
+                                        // }
+                                        // else {
+                                        //     console.log("found ",Vendor.Id._text);
+                                        //     const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                        //     console.log("updated");
+                                        // }
+                                    }
+                                }
+
+                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+
+                                await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                await activeQuickbookAccount(jwtTokenDecode.realmid);
+
+                                let transporter = nodemailer.createTransport({
+                                    service: 'Gmail',
+                                    auth: {
+                                        user: 'mohjav031010@gmail.com',
+                                        pass: 'Javed@0348'
+                                    }
+                                });
+
+                                let mailOptions = {
+                                    from: 'no-reply@wepull.io',
+                                    to: userArray.email,
+                                    subject: 'WePull Account Creation',
+                                    html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
+                                        "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
+                                };
+
+                                await transporter.sendMail(mailOptions);
+
+                                console.log("Sign up Working");
+                                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
+                            }
+                            else {
+
+                                //Login execution
+                                const token = crypto.randomBytes(48).toString('hex');
+                                const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
+                                const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                                const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
+                                console.log("compny lenght:",getCompanyByTenantResult.length);
+                                console.log("compny:",getCompanyByTenantResult);
+
+                                // {
+                                //     "Name": "IndustryType",
+                                //     "Value": "Electronic computer manufacturing"
+                                // },
+                                // {
+                                //     "Name": "CompanyType",
+                                //     "Value": "Sole Proprietor"
+                                // }
+                                let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
+
+                                let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
+                                let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
+                                console.log("IndustryType",IndustryType);
+                                console.log("CompanyType",CompanyType);
+                                console.log("CompanyType",CompanyType[0].Value._text);
+                                //IF Company do not exist
+                                if(getCompanyByTenantResult.length===0) {
+                                    //Create company if not exist
+
+                                    const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
+                                    // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
+                                    const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResult.insertId, null, 1, null);
+                                    console.log("Created new company as ", createCompanyResult.insertId);
+                                    //Get Accounts
+                                    for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
+                                        const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,createCompanyResult.insertId);
+                                        console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
+                                        if(checkTenantAccountResult[0].account_count === 0) {
+                                            console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, createCompanyResult.insertId, getUserByUserEmailResult.id,"quickbooks");
+                                            const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, createCompanyResult.insertId, getUserByUserEmailResult.id,"quickbooks");
+                                        }
+                                    }
+                                    //Get Expenses
+                                    for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                        const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
+                                        if(checkTenantExpenseResult[0].expense_count === 0) {
+                                            if(Expense.Line.length===undefined) {
+                                                let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                                let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                                let com = c + " - " + d;
+                                                console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                                                 if (Expense.PaymentType._text === "CreditCard") {
-                                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
                                                     console.log("Expenses Added Credit Card: ", Expense.Id._text)
                                                 }
                                                 else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
@@ -689,213 +768,232 @@ module.exports = {
                                                     console.log("Expenses Added Cash: ", Expense.Id._text)
                                                 }
                                             }
-                                        }
-                                        const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
-                                        const attachableArray = JSON.parse(getAttachableResult);
-                                        // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-                                        if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                                            // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                            else{
+                                                for (let i=0;i<Expense.Line.length;i++) {
+                                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                                    let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                                    let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                                    let com = c + " - " + d;
 
+                                                    console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                                    if (Expense.PaymentType._text === "CreditCard") {
+                                                        // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                                        const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                        console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                                    }
+                                                    else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                                        const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                        console.log("Expenses Added Cash: ", Expense.Id._text)
+                                                    }
+                                                }
+                                            }
+                                            const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
+                                            const attachableArray = JSON.parse(getAttachableResult);
+                                            // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                                            if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                                                // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                                Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+
+                                            }
+                                            else {
+                                                console.log("attachable is undefined");
+                                            }
                                         }
-                                        else {
-                                            console.log("attachable is undefined");
-                                        }
+
                                     }
-
-                                }
-                                // for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                                //     // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
-                                //     const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
-                                //     if(checkTenantExpenseResult[0].expense_count === 0) {
-                                //         if(Expense.Line.length===undefined) {
-                                //             let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                //             let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                //             let com = c + " - " + d;
-                                //             console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                                //             if (Expense.PaymentType._text === "CreditCard") {
-                                //                 const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                 console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                                //             }
-                                //             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //                 const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                 console.log("Expenses Added Cash: ", Expense.Id._text)
-                                //             }
-                                //         }
-                                //         else{
-                                //             for (let i=0;i<Expense.Line.length;i++) {
-                                //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                //                 let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                //                 let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                //                 let com = c + " - " + d;
-                                //
-                                //                 console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
-                                //                 if (Expense.PaymentType._text === "CreditCard") {
-                                //                     // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                //                     const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                     console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                                //                 }
-                                //                 else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //                     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                     console.log("Expenses Added Cash: ", Expense.Id._text)
-                                //                 }
-                                //             }
-                                //         }
-                                //         // if (Expense.PaymentType._text === "CreditCard") {
-                                //         //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //         //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                                //         // }
-                                //         // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //         //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //         //     console.log("Expenses Added Cash: ", Expense.Id._text)
-                                //         // }
-                                //     }
-                                //     else {
-                                //         console.log("Found:", Expense.Id._text)
-                                //         if(Expense.Line.length===undefined) {
-                                //             let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                //             let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                //             let com = c + " - " + d;
-                                //             console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                                //             if (Expense.PaymentType._text === "CreditCard") {
-                                //                 const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                 console.log("Expenses Updated Credit Card: ", Expense.Id._text)
-                                //             }
-                                //             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //                 const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                 console.log("Expenses Updated Cash: ", Expense.Id._text)
-                                //             }
-                                //         }
-                                //         else {
-                                //             for (let i=0;i<Expense.Line.length;i++) {
-                                //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                //                 let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                //                 let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                //                 let com = c + " - " + d;
-                                //
-                                //                 console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
-                                //                 if (Expense.PaymentType._text === "CreditCard") {
-                                //                     const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                     console.log("Expenses Updated Credit Card: ", Expense.Id._text)
-                                //                 }
-                                //                 else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //                     const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //                     console.log("Expenses Updated Cash: ", Expense.Id._text)
-                                //                 }
-                                //             }
-                                //         }
-                                //         // if (Expense.PaymentType._text === "CreditCard") {
-                                //         //     const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //         //     console.log("Expenses Updated Credit Card: ", Expense.Id._text)
-                                //         // }
-                                //         // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                //         //     const addExpenseResult = await updateQuickbookExpense(Expense.Id._text ,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                //         //     console.log("Expenses Updated Cash: ", Expense.Id._text)
-                                //         // }
-                                //     }
-                                // }
+                                    // for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                    //     // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
+                                    //     const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
+                                    //     if(checkTenantExpenseResult[0].expense_count === 0) {
+                                    //         if(Expense.Line.length===undefined) {
+                                    //             let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                    //             let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    //             let com = c + " - " + d;
+                                    //             console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                                    //             if (Expense.PaymentType._text === "CreditCard") {
+                                    //                 const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                 console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                    //             }
+                                    //             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //                 const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                 console.log("Expenses Added Cash: ", Expense.Id._text)
+                                    //             }
+                                    //         }
+                                    //         else{
+                                    //             for (let i=0;i<Expense.Line.length;i++) {
+                                    //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                    //                 let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                    //                 let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    //                 let com = c + " - " + d;
+                                    //
+                                    //                 console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                    //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                    //                 if (Expense.PaymentType._text === "CreditCard") {
+                                    //                     // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                    //                     const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                     console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                    //                 }
+                                    //                 else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //                     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                     console.log("Expenses Added Cash: ", Expense.Id._text)
+                                    //                 }
+                                    //             }
+                                    //         }
+                                    //         // if (Expense.PaymentType._text === "CreditCard") {
+                                    //         //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //         //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                    //         // }
+                                    //         // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //         //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //         //     console.log("Expenses Added Cash: ", Expense.Id._text)
+                                    //         // }
+                                    //     }
+                                    //     else {
+                                    //         console.log("Found:", Expense.Id._text)
+                                    //         if(Expense.Line.length===undefined) {
+                                    //             let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                    //             let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    //             let com = c + " - " + d;
+                                    //             console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                                    //             if (Expense.PaymentType._text === "CreditCard") {
+                                    //                 const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                 console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                    //             }
+                                    //             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //                 const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                 console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                    //             }
+                                    //         }
+                                    //         else {
+                                    //             for (let i=0;i<Expense.Line.length;i++) {
+                                    //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                    //                 let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                    //                 let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    //                 let com = c + " - " + d;
+                                    //
+                                    //                 console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                    //                 // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                    //                 if (Expense.PaymentType._text === "CreditCard") {
+                                    //                     const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                     console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                    //                 }
+                                    //                 else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //                     const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //                     console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                    //                 }
+                                    //             }
+                                    //         }
+                                    //         // if (Expense.PaymentType._text === "CreditCard") {
+                                    //         //     const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //         //     console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                    //         // }
+                                    //         // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    //         //     const addExpenseResult = await updateQuickbookExpense(Expense.Id._text ,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                    //         //     console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                    //         // }
+                                    //     }
+                                    // }
 
 
-                                //Get Departments
-                                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
-                                        if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                            if(Department.SubDepartment._text.toString() === "true") {
-                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                    //Get Departments
+                                    if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                        for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                            const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
+                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                if(Department.SubDepartment._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                }
                                             }
                                             else {
-                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
-                                            }
-                                        }
-                                        else {
-                                            console.log("Found:", Department.Id._text)
-                                            if(Department.SubDepartment._text.toString() === "true") {
-                                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
-                                            }
-                                            else {
-                                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
-                                            }
-                                        }
-                                    }
-                                }
-                                if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                        const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
-                                        if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                            if(Class.SubClass._text.toString() === "true") {
-                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                            }
-                                            else {
-                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                            }
-                                        }
-                                        else {
-                                            console.log("Found:", Class.Id._text)
-                                            if(Class.SubClass._text.toString() === "true") {
-                                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                            }
-                                            else {
-                                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                console.log("Found:", Department.Id._text)
+                                                if(Department.SubDepartment._text.toString() === "true") {
+                                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                }
                                             }
                                         }
                                     }
-                                }
-                                //Get vendors
-                                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                        const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,createCompanyResult.insertId);
-                                        if(checkTenantVendorResult[0].vendor_count === 0) {
-                                            // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                            // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                            // console.log("address",address);
-                                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            console.log("added");
-                                        }
-                                        else {
-                                            console.log("found ",Vendor.Id._text);
-                                            const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                            console.log("updated");
+                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
+                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                            }
+                                            else {
+                                                console.log("Found:", Class.Id._text)
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                            }
                                         }
                                     }
+                                    //Get vendors
+                                    if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                        for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                            const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,createCompanyResult.insertId);
+                                            if(checkTenantVendorResult[0].vendor_count === 0) {
+                                                // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                                // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                                // console.log("address",address);
+                                                console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                console.log("added");
+                                            }
+                                            else {
+                                                console.log("found ",Vendor.Id._text);
+                                                const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                console.log("updated");
+                                            }
+                                        }
+                                    }
+                                    // for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                    //     if(Department.SubDepartment._text.toString() === "true") {
+                                    //         const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //         console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //     }
+                                    //     else {
+                                    //         const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //         console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //     }
+                                    // }
                                 }
-                                // for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                //     if(Department.SubDepartment._text.toString() === "true") {
-                                //         const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //         console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //     }
-                                //     else {
-                                //         const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //         console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //     }
-                                // }
-                            }
-                            else {
-                                //update all data while login
-                                console.log("Login as ", getCompanyByTenantResult[0].id);
-                                //Get Accounts
-                                // for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
-                                //     const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
-                                //     // console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
-                                //     if(checkTenantAccountResult[0].account_count === 0) {
-                                //         console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
-                                //         const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
-                                //     }
-                                // }
+                                else {
+                                    //update all data while login
+                                    console.log("Login as ", getCompanyByTenantResult[0].id);
+                                    //Get Accounts
+                                    // for (const Account of accountArray.IntuitResponse.QueryResponse.Account) {
+                                    //     const checkTenantAccountResult = await checkTenantAccount(Account.Id._text,getCompanyByTenantResult[0].id);
+                                    //     // console.log("account id:",Account.Id._text,"company id:",createCompanyResult.insertId,"count:",checkTenantAccountResult[0].account_count);
+                                    //     if(checkTenantAccountResult[0].account_count === 0) {
+                                    //         console.log(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                    //         const createTenantAccountResult = await createTenantAccount(null, Account.Id._text, Account.Name._text, Account.Classification._text, Account.Active._text=="true"?1:0, null, Account.CurrencyRef._text, Account.MetaData.CreateTime._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id,"quickbooks");
+                                    //     }
+                                    // }
 
-                                const Attachables = [];
-                                //Get Expenses
+                                    const Attachables = [];
+                                    //Get Expenses
 //Comment
 //                                 for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
 //                                     // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
@@ -1018,98 +1116,99 @@ module.exports = {
 //                                     }
 //                                 }
 
-                                // console.log("attachables",Attachables);
+                                    // console.log("attachables",Attachables);
 
 
 
-                                //Get Departments
+                                    //Get Departments
 
-                                //Comment
-                                // console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
-                                // if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                //     for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                //         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,getCompanyByTenantResult[0].id);
-                                //         if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                //             if(Department.SubDepartment._text.toString() === "true") {
-                                //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //         else {
-                                //             console.log("Found:", Department.Id._text)
-                                //             if(Department.SubDepartment._text.toString() === "true") {
-                                //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //     }
-                                // }
-                                // if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                //     for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                //         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,getCompanyByTenantResult[0].id);
-                                //         if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                //             if(Class.SubClass._text.toString() === "true") {
-                                //                 const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //         else {
-                                //             console.log("Found:", Class.Id._text)
-                                //             if(Class.SubClass._text.toString() === "true") {
-                                //                 const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //             }
-                                //             else {
-                                //                 const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                //                 console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                //             }
-                                //         }
-                                //     }
-                                // }
+                                    //Comment
+                                    // console.log("Departemnt check",departmentArray.IntuitResponse.QueryResponse.Department);
+                                    // if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                    //     for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                    //         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,getCompanyByTenantResult[0].id);
+                                    //         if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                    //             if(Department.SubDepartment._text.toString() === "true") {
+                                    //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                    //             }
+                                    //             else {
+                                    //                 const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                    //             }
+                                    //         }
+                                    //         else {
+                                    //             console.log("Found:", Department.Id._text)
+                                    //             if(Department.SubDepartment._text.toString() === "true") {
+                                    //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                    //             }
+                                    //             else {
+                                    //                 const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                    //             }
+                                    //         }
+                                    //     }
+                                    // }
+                                    // if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                    //     for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                    //         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,getCompanyByTenantResult[0].id);
+                                    //         if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                    //             if(Class.SubClass._text.toString() === "true") {
+                                    //                 const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //             }
+                                    //             else {
+                                    //                 const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //             }
+                                    //         }
+                                    //         else {
+                                    //             console.log("Found:", Class.Id._text)
+                                    //             if(Class.SubClass._text.toString() === "true") {
+                                    //                 const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //             }
+                                    //             else {
+                                    //                 const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    //                 console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                    //             }
+                                    //         }
+                                    //     }
+                                    // }
 
 
-                                //Get vendors
-                                //Comment
-                                // if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                //     for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                //         const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
-                                //         if(checkTenantVendorResult[0].vendor_count === 0) {
-                                //             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                //             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                //             // console.log("address",address);
-                                //             console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             console.log("added");
-                                //         }
-                                //         else {
-                                //             console.log("found ",Vendor.Id._text);
-                                //             const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                //             console.log("updated");
-                                //         }
-                                //     }
-                                // }
+                                    //Get vendors
+                                    //Comment
+                                    // if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                    //     for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                    //         const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
+                                    //         if(checkTenantVendorResult[0].vendor_count === 0) {
+                                    //             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                    //             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                    //             // console.log("address",address);
+                                    //             console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                    //             const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                    //             console.log("added");
+                                    //         }
+                                    //         else {
+                                    //             console.log("found ",Vendor.Id._text);
+                                    //             const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                    //             console.log("updated");
+                                    //         }
+                                    //     }
+                                    // }
 
-                                const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
-                                console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
+                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                    console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
+                                }
+                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                await activeQuickbookAccount(jwtTokenDecode.realmid);
+                                console.log("updateCompanyTokenResult");
+                                console.log("Login Working");
+                                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
                             }
-                            const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
-                            await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
-                            await activeQuickbookAccount(jwtTokenDecode.realmid);
-                            console.log("updateCompanyTokenResult");
-                            console.log("Login Working");
-                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
                         }
                     }
                     else {

@@ -11,7 +11,7 @@ const {
     syncVendors,
     syncAttachable
 } = require("./quickbook.controller");
-router.get("/quickbooks_url",quickbooks_url);
+router.get("/quickbooks_url/:login_type",quickbooks_url);
 router.get("/quickbooks_callback", quickbooks_callback);
 router.get("/quickbook_refresh_token/:email", quickbook_refresh_token);
 // router.get('/quickbook_company_info', quickbook_company_info);

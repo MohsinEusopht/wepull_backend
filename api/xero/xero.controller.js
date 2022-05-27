@@ -45,6 +45,7 @@ const {XeroClient} = require("xero-node");
 const jwt = require('jsonwebtoken');
 const request = require('request');
 const moment = require('moment-timezone');
+const {updateXeroAccountEmail} = require("../users/user.service");
 const {getUserByEmail} = require("../users/user.service");
 const {checkUserCompanyByTenant} = require("../users/user.service");
 const {updateTenantAccount} = require("../users/user.service");
@@ -294,7 +295,7 @@ module.exports = {
 
 
             console.log("TTTTTT",tenantArray);
-            console.log("checkUserEmailResult[0].count_user",checkUserEmailResult[0].count_user);
+            console.log("checkUserEmailResult[0].count_user",checkUserEmailResult[0].count_user,"email",email);
             // this.exit();
             if(checkUserEmailResult[0].count_user === 0) {
                 console.log("account donot exist.");
@@ -311,7 +312,48 @@ module.exports = {
                     }
                 }
                 else if(login_type === "sign_in") {
-                    res.redirect(`${process.env.APP_URL}login/error/404`);
+                    // for (const tenant of tenantArray) {
+                        const checkUserCompanyResultt = await checkUserCompanyByTenant(tenantArray[0].tenantId);
+                        console.log("checkUserCompanyResult[0].count_company",checkUserCompanyResultt[0].count_company);
+                        if (checkUserCompanyResultt[0].count_company === 1) {
+                            // const checkUserEmailResultt = await checkUserEmail(email);
+                            // if(checkUserCompanyResultt.count_user === 0) {
+                                const getCompanyByTenantResult = await getCompanyByTenant(tenantArray[0].tenantId);
+                                console.log(getCompanyByTenantResult[0].user_id)
+                                const updateXeroAccountEmailResult = await updateXeroAccountEmail(getCompanyByTenantResult[0].user_id, email);
+
+                                console.log("User Email",email);
+                                console.log("User xero_userid",xero_userid);
+                                console.log("User first_name",first_name);
+                                console.log("User last_name",last_name);
+                                console.log("User name",name);
+                                console.log("direct login");
+                                const token = crypto.randomBytes(48).toString('hex');
+                                const updateLoginTokenResult = await updateXeroLoginToken(email, token, xero_id_token, xero_access_token, xero_refresh_token, xero_expire_at);
+                                const getUserByUserEmailResult = await getUserByUserEmail(email);
+
+                                const getCompanyResult = await getCompany(getUserByUserEmailResult.id);
+                                if(tenantArray.length>0) {
+                                    //disable all active company
+                                    const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
+                                    const getCompanyByTenantResultt = await getCompanyByTenant(tenantArray[0].tenantId);
+                                    console.log("disable all company of",getUserByUserEmailResult.id);
+                                    console.log("company data",getCompanyByTenantResultt);
+                                    // console.log("active tenant",getCompanyByTenantResultt);
+
+                                    //enable first existing company
+                                    const activateCompanyResult = await activateCompany(getCompanyByTenantResultt[0].id);
+                                    // console.log("token",token);
+                                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(email)+`/xero/1/`+ token + `/sign_in`);
+                                }
+                                // updateXeroAccountEmail
+                            // }
+                        }
+                        else {
+                            res.redirect(`${process.env.APP_URL}login/error/404`);
+                        }
+                    // }
+
                 }
             }
             else {

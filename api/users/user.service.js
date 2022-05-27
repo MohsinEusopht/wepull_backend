@@ -49,6 +49,20 @@ module.exports = {
             );
         })
     },
+    updateXeroAccountEmail: (id, email) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE users SET email = ? WHERE id = ?`, [email, id],
+                (error, results, fields) => {
+                    if (error) {
+                        console.log(error);
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     updateSetupAccount: (email, first_name, last_name, contact, password) => {
         return new Promise((resolov, reject) => {
             pool.query(

@@ -33,7 +33,7 @@
     "ngrok": "^4.3.0",
     "node-quickbooks": "^2.0.39",
     "nodemailer": "^6.7.2",
-    "nodemon": "^2.0.15",
+    "nodemon": "^2.0.16",
     "openid-client": "^5.1.4",
     "path": "^0.12.7",
     "request-timeout": "^0.0.2",

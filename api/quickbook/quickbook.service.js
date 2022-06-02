@@ -174,10 +174,10 @@ module.exports = {
             );
         })
     },
-    addVendor: (vendor_id, name, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) => {
+    addVendor: (vendor_id, name, phone, mobile, email, web, address, city, region, country, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO vendors(vendor_id, name, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [vendor_id, name, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at],
+                `INSERT INTO vendors(vendor_id, name, phone, mobile, email, web, address, city, region, country, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [vendor_id, name, phone, mobile, email, web, address, city, region, country, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -188,10 +188,10 @@ module.exports = {
             );
         })
     },
-    updateVendor: (vendor_id, name, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) => {
+    updateVendor: (vendor_id, name, phone, mobile, email, web, address, city, region, country, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE vendors SET name = ?, phone = ?, mobile = ?, email = ?, web = ?, address = ?, city = ?, postal_code = ?, balance = ?, acct_num = ?, currency = ?, status = ?, type = ?, updated_at = ? WHERE vendor_id = ? and company_id = ?`, [name, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, updated_at, vendor_id, company_id],
+                `UPDATE vendors SET name = ?, phone = ?, mobile = ?, email = ?, web = ?, address = ?, city = ?, region = ?, country = ?, postal_code = ?, balance = ?, acct_num = ?, currency = ?, status = ?, type = ?, updated_at = ? WHERE vendor_id = ? and company_id = ?`, [name, phone, mobile, email, web, address, city, region, country, postal_code, balance, acct_num, currency, status, type, updated_at, vendor_id, company_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

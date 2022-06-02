@@ -1725,9 +1725,10 @@ module.exports = {
                         let address = address1 + address2 + address3 + address4;
                         let city = Contact.addresses[0].city;
                         let postalCode = Contact.addresses[0].postalCode;
+                        let region = Contact.addresses[0].region;
                         let country = Contact.addresses[0].country;
-                        let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
-                        let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
+                        let contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneAreaCode + Contact.phones[1].phoneNumber:null;
+                        let mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneAreaCode + Contact.phones[3].phoneNumber:null;
                         let website = Contact.website!==undefined?Contact.website:null;
                         let balance = Contact.balances!==undefined?Contact.balances:null;
                         let date = Contact.updatedDateUTC;
@@ -1749,12 +1750,12 @@ module.exports = {
                             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
                             // console.log("address",address);
                             console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, null, status, 'xero', 'USD', user_id, date, date);
-                            const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', company_id, user_id, date, date);
+                            const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, region!=undefined?region:null, country!=undefined?country:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', company_id, user_id, date, date);
                             console.log("added");
                         }
                         else {
                             console.log("found ",vendor_id);
-                            const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', company_id, user_id, date, date);
+                            const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, region!=undefined?region:null, country!=undefined?country:null, postalCode!=undefined?postalCode:null, 0, acct_num, 'USD', status, 'xero', company_id, user_id, date, date);
                             console.log("updated");
                         }
                         // console.log(Contact);
@@ -2512,17 +2513,18 @@ module.exports = {
                         let address = address1 + address2 + address3 + address4;
                         let city = Contact.addresses[0].city;
                         let postalCode = Contact.addresses[0].postalCode;
+                        let region = Contact.addresses[0].region;
                         let country = Contact.addresses[0].country;
                         let contact = null;
                         let mobile = null;
-                        if(Contact.contactNumber === undefined) {
-                            contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneNumber:null;
-                            mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneNumber:null;
-                        }
-                        else {
+                        // if(Contact.contactNumber === undefined) {
+                        //     contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneAreaCode + Contact.phones[1].phoneNumber:null;
+                        //     mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneAreaCode + Contact.phones[3].phoneNumber:null;
+                        // }
+                        // else {
                             contact = Contact.phones[1].phoneCountryCode!==undefined? Contact.phones[1].phoneCountryCode + Contact.phones[1].phoneAreaCode + Contact.phones[1].phoneNumber:null;
                             mobile = Contact.phones[3].phoneCountryCode!==undefined? Contact.phones[3].phoneCountryCode + Contact.phones[3].phoneAreaCode + Contact.phones[3].phoneNumber:null;
-                        }
+                        // }
 
                         let website = Contact.website!==undefined?Contact.website:null;
                         let balance = Contact.balances!==undefined?Contact.balances:null;
@@ -2533,7 +2535,7 @@ module.exports = {
                         console.log(status);
                         console.log(acct_num);
                         console.log(email);
-                        console.log(address!==""?address:null);
+                        console.log(address!==""?address+ " " + city + " " + postalCode:null);
                         console.log(contact);
                         console.log("Contact",Contact.phones[1])
                         console.log(mobile);
@@ -2547,13 +2549,13 @@ module.exports = {
                             // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
                             // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
                             // console.log("address",address);
-                            console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
-                            const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                            console.log(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, region!=undefined?region:null, country!=undefined?country:null, postalCode!=undefined?postalCode:null, null, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                            const addVendorResult = await addVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, region!=undefined?region:null, country!=undefined?country:null, postalCode!=undefined?postalCode:null, 0, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
                             console.log("added");
                         }
                         else {
                             console.log("found ",vendor_id);
-                            const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, postalCode!=undefined?postalCode:null, 0, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
+                            const addVendorResult = await updateVendor(vendor_id, name, contact, mobile, email, website, address!==""?address:null, city!==undefined?city:null, region!=undefined?region:null, country!=undefined?country:null, postalCode!=undefined?postalCode:null, 0, acct_num, record[0].currency, status, 'xero', company_id, user_id, date, date);
                             console.log("updated");
                         }
                         // console.log(Contact);
@@ -2582,13 +2584,13 @@ module.exports = {
             console.log(err);
             return res.json({
                 status: 500,
-                message: "Vendors synced failed, Please try again."
+                message: "Suppliers synced failed, Please try again."
             })
         }
 
         return res.json({
             status: 200,
-            message: "Vendors synced successfully!"
+            message: "Suppliers synced successfully!"
         })
 
     },

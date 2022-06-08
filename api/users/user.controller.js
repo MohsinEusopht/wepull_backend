@@ -74,7 +74,11 @@ const {
     getQuickbookExpenseByCategory,
     getXeroExpenseByCategory,
     getQuickbookExpenseByCategoryAndVendor,
+    getQuickbookExpenseByVendor,
+    getQuickbookExpenseByVendorForUser,
     getXeroExpenseByCategoryAndVendor,
+    getXeroExpenseByVendor,
+    getXeroExpenseByVendorForUser,
     getAllCompanies
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
@@ -548,12 +552,76 @@ module.exports = {
             });
         }
     },
+    getQuickbookExpenseByVendor: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getQuickbookExpenseByVendor(company_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getQuickbookExpenseByVendorForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getQuickbookExpenseByVendorForUser(company_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
     getXeroExpenseByCategoryAndVendor: async(req, res) => {
         try {
             const company_id = req.params.company_id;
             const category_id = req.params.category_id;
             const vendor_id = req.params.vendor_id;
             const record = await getXeroExpenseByCategoryAndVendor(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getXeroExpenseByVendor: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getXeroExpenseByVendor(company_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getXeroExpenseByVendorForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getXeroExpenseByVendorForUser(company_id, vendor_id);
             return res.json({
                 success: 1,
                 data: record

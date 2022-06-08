@@ -56,6 +56,10 @@ const {
     getXeroExpenseByCategory,
     getQuickbookExpenseByCategoryAndVendor,
     getXeroExpenseByCategoryAndVendor,
+    getQuickbookExpenseByVendor,
+    getXeroExpenseByVendor,
+    getQuickbookExpenseByVendorForUser,
+    getXeroExpenseByVendorForUser,
     getAllCompanies
 } = require("./user.controller");
 
@@ -153,6 +157,12 @@ router.get('/getXeroExpenseByCategory/:company_id/:category_id', getXeroExpenseB
 
 router.get('/getQuickbookExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getQuickbookExpenseByCategoryAndVendor);
 router.get('/getXeroExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getXeroExpenseByCategoryAndVendor);
+
+router.get('/getQuickbookExpenseByVendor/:company_id/:vendor_id', getQuickbookExpenseByVendor);
+router.get('/getXeroExpenseByVendor/:company_id/:vendor_id', getXeroExpenseByVendor);
+
+router.get('/getQuickbookExpenseByVendorForUser/:company_id/:vendor_id', getQuickbookExpenseByVendorForUser);
+router.get('/getXeroExpenseByVendorForUser/:company_id/:vendor_id', getXeroExpenseByVendorForUser);
 // router.get('/getAccounts/:company_id', getAccounts);
 
 

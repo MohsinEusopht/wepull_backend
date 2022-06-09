@@ -55,7 +55,9 @@ const {
     getQuickbookExpenseByCategory,
     getXeroExpenseByCategory,
     getQuickbookExpenseByCategoryAndVendor,
+    getQuickbookExpenseByCategoryAndVendorForUser,
     getXeroExpenseByCategoryAndVendor,
+    getXeroExpenseByCategoryAndVendorForUser,
     getQuickbookExpenseByVendor,
     getXeroExpenseByVendor,
     getQuickbookExpenseByVendorForUser,
@@ -157,6 +159,9 @@ router.get('/getXeroExpenseByCategory/:company_id/:category_id', getXeroExpenseB
 
 router.get('/getQuickbookExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getQuickbookExpenseByCategoryAndVendor);
 router.get('/getXeroExpenseByCategoryAndVendor/:company_id/:category_id/:vendor_id', getXeroExpenseByCategoryAndVendor);
+
+router.get('/getQuickbookExpenseByCategoryAndVendorForUser/:company_id/:category_id/:vendor_id', getQuickbookExpenseByCategoryAndVendorForUser);
+router.get('/getXeroExpenseByCategoryAndVendorForUser/:company_id/:category_id/:vendor_id', getXeroExpenseByCategoryAndVendorForUser);
 
 router.get('/getQuickbookExpenseByVendor/:company_id/:vendor_id', getQuickbookExpenseByVendor);
 router.get('/getXeroExpenseByVendor/:company_id/:vendor_id', getXeroExpenseByVendor);

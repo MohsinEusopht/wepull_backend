@@ -74,9 +74,11 @@ const {
     getQuickbookExpenseByCategory,
     getXeroExpenseByCategory,
     getQuickbookExpenseByCategoryAndVendor,
+    getQuickbookExpenseByCategoryAndVendorForUser,
     getQuickbookExpenseByVendor,
     getQuickbookExpenseByVendorForUser,
     getXeroExpenseByCategoryAndVendor,
+    getXeroExpenseByCategoryAndVendorForUser,
     getXeroExpenseByVendor,
     getXeroExpenseByVendorForUser,
     getAllCompanies
@@ -552,6 +554,23 @@ module.exports = {
             });
         }
     },
+    getQuickbookExpenseByCategoryAndVendorForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const category_id = req.params.category_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getQuickbookExpenseByCategoryAndVendorForUser(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
     getQuickbookExpenseByVendor: async(req, res) => {
         try {
             const company_id = req.params.company_id;
@@ -590,6 +609,23 @@ module.exports = {
             const category_id = req.params.category_id;
             const vendor_id = req.params.vendor_id;
             const record = await getXeroExpenseByCategoryAndVendor(company_id, category_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getXeroExpenseByCategoryAndVendorForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const category_id = req.params.category_id;
+            const vendor_id = req.params.vendor_id;
+            const record = await getXeroExpenseByCategoryAndVendorForUser(company_id, category_id, vendor_id);
             return res.json({
                 success: 1,
                 data: record

@@ -871,7 +871,7 @@ module.exports = {
     getQuickbookExpenses: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.currency,e.description,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type, d.depart_name,cl.depart_name as 'class',e.total_amount,c.company_name from expenses e LEFT JOIN accounts a ON e.account_number=a.accountID join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id],
+                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.currency,e.description,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type, d.depart_name,cl.depart_name as 'class',e.total_amount,c.company_name from expenses e LEFT JOIN accounts a ON e.account_number=a.accountID join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -897,7 +897,7 @@ module.exports = {
     getXeroExpenses: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'class' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
+                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'class' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
                 // `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code join companies c ON e.company_id = c.id where e.company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {

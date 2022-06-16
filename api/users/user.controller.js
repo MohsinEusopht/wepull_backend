@@ -81,7 +81,9 @@ const {
     getXeroExpenseByCategoryAndVendorForUser,
     getXeroExpenseByVendor,
     getXeroExpenseByVendorForUser,
-    getAllCompanies
+    getAllCompanies,
+    getXeroExpensesForUser,
+    getQuickbookExpensesForUser
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -1231,6 +1233,22 @@ module.exports = {
             });
         }
     },
+    getQuickbookExpensesForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            console.log(company_id);
+            const record = await getQuickbookExpensesForUser(company_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
     getQuickbookExpenseAttachment: async(req, res) => {
         try {
             const company_id = req.params.company_id;
@@ -1252,6 +1270,22 @@ module.exports = {
             const company_id = req.params.company_id;
             console.log("company id ",company_id);
             const record = await getXeroExpenses(company_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getXeroExpensesForUser: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            console.log("company id ",company_id);
+            const record = await getXeroExpensesForUser(company_id);
             return res.json({
                 success: 1,
                 data: record

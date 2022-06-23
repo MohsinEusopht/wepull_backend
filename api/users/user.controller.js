@@ -298,6 +298,13 @@ module.exports = {
                     html: "Welcome to WePull,<br/> Please setup your account detail at: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
                 };
 
+                await transporter.sendMail(mailOptions).catch(() => {
+                    return res.json({
+                        "status": "200",
+                        "message": "User created successfully, Email Failed"
+                    });
+                });
+
                 // let transporter = nodemailer.createTransport({
                 //     host: "smtp.ethereal.email",
                 //     port: 587,
@@ -316,12 +323,6 @@ module.exports = {
                 //     html: "Setup your account at url: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>", // html body
                 // });
 
-                await transporter.sendMail(mailOptions).catch(() => {
-                    return res.json({
-                        "status": "200",
-                        "message": "User created successfully, Email Failed"
-                    });
-                });
 
                 // console.log("Message sent: %s", info.messageId);
                 //

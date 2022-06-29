@@ -13,7 +13,7 @@ const {static} = require("express");
 const cors = require("cors");
 
 const app = express();
-const path = require('path');
+// const path = require('path');
 const OAuthClient = require('intuit-oauth');
 const {XeroClient} = require("xero-node");
 const bodyParser = require('body-parser');
@@ -21,11 +21,15 @@ const moment = require('moment-timezone');
 const ngrok = process.env.NGROK_ENABLED === 'true' ? require('ngrok') : null;
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
-// let corsOptions = {
-//     origin: "http://localhost:3001"
-// };
+const path = __dirname + '/client/build';
+app.use(express.static(path));
+let corsOptions = {
+    origin: process.env.APP_URL
+};
+app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cors());
+// app.use(cors());
+console.log("Base Url: ",__dirname)
 
 app.use("/api/users", userRouter);
 app.use("/api/xero", xeroRouter);
@@ -94,7 +98,8 @@ let scope = 'openid profile email accounting.transactions offline_access'.split(
  */
 
 app.get('/', async (req, res) => {
-    res.send("Apis Working");
+    res.sendFile(path + "/index.html");
+    // res.send("Apis Working");
 });
 
 app.get('/xero_url', async (req, res) => {

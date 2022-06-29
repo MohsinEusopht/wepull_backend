@@ -40,7 +40,8 @@ const {
     updateCompanyInfo,
     checkAttachable,
     updateUserCompanyResult,
-    getCompanyByID
+    getCompanyByID,
+    storeActivity
 } = require("../users/user.service");
 
 const jwt = require('jsonwebtoken');
@@ -476,7 +477,7 @@ module.exports = {
                                         let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
                                         let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
 
-                                        const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                        const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
                                         console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text)
                                         // console.log("IndustryType",IndustryType);
                                         // console.log("CompanyType",CompanyType);
@@ -511,7 +512,7 @@ module.exports = {
 
                                     let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
                                     let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
-                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
                                     console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
 
                                     const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
@@ -537,7 +538,7 @@ module.exports = {
 
                                 const token = crypto.randomBytes(48).toString('hex');
                                 const createUsersResult = await qbSignUp(userArray.givenName, userArray.familyName, userArray.email,userArray.phoneNumber, qb_access_token, qb_refresh_token, expire_at, token);
-                                const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
+                                const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
                                 // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
                                 const createUserRoleResult = await createUserRole(createUsersResult.insertId, createCompanyResult.insertId, null, 1, null);
                                 // const updateUserCompanyResult =
@@ -611,6 +612,7 @@ module.exports = {
 
                                 }
 
+                                await storeActivity("Expenses Synced","-", "Expense", getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
                                 for (const Attachable of Attachables) {
                                     console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                                     let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
@@ -661,7 +663,7 @@ module.exports = {
                                         }
                                     }
                                 }
-
+                                await storeActivity("Categories Synced","-", "Category",getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
                                 //Get vendors
                                 if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
                                     for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
@@ -681,7 +683,7 @@ module.exports = {
                                         // }
                                     }
                                 }
-
+                                await storeActivity("Suppliers Synced","-", "Supplier",getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
                                 const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
 
                                 await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
@@ -732,12 +734,12 @@ module.exports = {
                                 let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
                                 console.log("IndustryType",IndustryType);
                                 console.log("CompanyType",CompanyType);
-                                console.log("CompanyType",CompanyType[0].Value._text);
+                                console.log("CompanyType",CompanyType[0]);
                                 //IF Company do not exist
                                 if(getCompanyByTenantResult.length===0) {
                                     //Create company if not exist
 
-                                    const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
+                                    const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
                                     // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
                                     const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResult.insertId, null, 1, null);
                                     console.log("Created new company as ", createCompanyResult.insertId);
@@ -1199,7 +1201,7 @@ module.exports = {
                                     //     }
                                     // }
 
-                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0].Value._text!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0].Value._text!=undefined||null?IndustryType[0].Value._text:null);
+                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
                                     console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
                                 }
                                 const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
@@ -1341,6 +1343,8 @@ module.exports = {
             let purchases = await getPurchases(record[0].access_token, record[0].tenant_id);
             let purchaseArray = JSON.parse(purchases);
             console.log("purchase",purchaseArray);
+
+            await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
             for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
                 // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
                 // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
@@ -1587,6 +1591,10 @@ module.exports = {
             let departmentArray = JSON.parse(departments);
             let classArray = JSON.parse(classes);
 
+
+            console.log("Categories Synced","-", "Category", company_id, user_id)
+            await storeActivity("Categories Synced","-", "Category", company_id, user_id);
+
             console.log("departments",departmentArray);
             console.log("classes", classArray.IntuitResponse.QueryResponse.Class);
             if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
@@ -1650,6 +1658,7 @@ module.exports = {
                     message: "No category found."
                 })
             }
+
         } catch (err) {
             // const error = JSON.stringify(err.response, null, 2)
             console.log(err);
@@ -1673,6 +1682,9 @@ module.exports = {
         console.log("tenant:", record[0].tenant_id, record[0].access_token);
         let vendors = await getVendors(record[0].access_token, record[0].tenant_id);
         let vendorArray = JSON.parse(vendors);
+
+        await storeActivity("Suppliers Synced","-", "Supplier", company_id, user_id);
+
         console.log("departments",vendorArray.IntuitResponse.QueryResponse.Vendor);
         if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
             for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {

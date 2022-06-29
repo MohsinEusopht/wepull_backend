@@ -64,7 +64,8 @@ const {
     getXeroExpenseByVendorForUser,
     getAllCompanies,
     getQuickbookExpensesForUser,
-    getXeroExpensesForUser
+    getXeroExpensesForUser,
+    getLastSyncedActivity
 } = require("./user.controller");
 
 router.get("/", defaultFun);
@@ -177,5 +178,7 @@ router.get('/getXeroExpenseByVendorForUser/:company_id/:vendor_id', getXeroExpen
 
 
 router.get('/getAllCompanies',getAllCompanies);
+
+router.get('/getLastSyncedActivity/:company_id/:user_id/:type', getLastSyncedActivity);
 
 module.exports = router;

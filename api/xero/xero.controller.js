@@ -38,7 +38,8 @@ const {
     updateCompanyInfo,
     checkAttachable,
     updateUserCompanyResult,
-    getCompanyById
+    getCompanyById,
+    storeActivity
 } = require("../users/user.service");
 
 const {XeroClient} = require("xero-node");
@@ -1766,6 +1767,8 @@ module.exports = {
                         // console.log(Contact);
                     }
                 }
+
+                await storeActivity("Suppliers Synced","-", "Supplier", company_id, user_id);
                 // const response = await xero.accountingApi.getContacts(record[0].tenant_id, ifModifiedSince, where, order, iDs, page, includeArchived, summaryOnly, searchTerm);
                 // }
 
@@ -1794,6 +1797,7 @@ module.exports = {
 
                 }
 
+                await storeActivity("Categories Synced","-", "Category", company_id, user_id);
 
                 //Get Expense
                 const page = 1;
@@ -1896,6 +1900,7 @@ module.exports = {
                     }
                 }
 
+                await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
             }
 
 
@@ -2198,7 +2203,7 @@ module.exports = {
             console.log("TS",TS);
 
             await xero.setTokenSet(TS);
-
+            await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
 
             const page = 1;
             const includeArchived = true;
@@ -2350,7 +2355,7 @@ module.exports = {
             });
 
             console.log("token set:",TS);
-
+            await storeActivity("Categories Synced","-", "Category", company_id, user_id);
             await xero.setTokenSet(TS);
 
             // const xeroTenantId = 'YOUR_XERO_TENANT_ID';
@@ -2360,7 +2365,7 @@ module.exports = {
 
 
             const response = await xero.accountingApi.getTrackingCategories(record[0].tenant_id,  null, order, includeArchived);
-            console.log("result:::",response.body.trackingCategories[0].options)
+            // console.log("result:::",response.body.trackingCategories[0].options)
 
             if(response.body.trackingCategories.length>0) {
 
@@ -2485,7 +2490,7 @@ module.exports = {
             });
 
             console.log("token set:",TS);
-
+            await storeActivity("Suppliers Synced","-", "Supplier", company_id, user_id);
             await xero.setTokenSet(TS);
             //
             // // const xeroTenantId = 'YOUR_XERO_TENANT_ID';

@@ -83,7 +83,9 @@ const {
     getXeroExpenseByVendorForUser,
     getAllCompanies,
     getXeroExpensesForUser,
-    getQuickbookExpensesForUser
+    getQuickbookExpensesForUser,
+    storeActivity,
+    getLastSyncedActivity
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -661,6 +663,24 @@ module.exports = {
             const company_id = req.params.company_id;
             const vendor_id = req.params.vendor_id;
             const record = await getXeroExpenseByVendorForUser(company_id, vendor_id);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getLastSyncedActivity: async(req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const user_id = req.params.user_id;
+            const type = req.params.type;
+
+            const record = await getLastSyncedActivity(company_id, user_id, type);
             return res.json({
                 success: 1,
                 data: record
@@ -1425,5 +1445,5 @@ module.exports = {
                 message: "Error :" + e.message,
             });
         }
-    },
+    }
 };

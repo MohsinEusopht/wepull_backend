@@ -689,23 +689,23 @@ module.exports = {
                                 await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
                                 await activeQuickbookAccount(jwtTokenDecode.realmid);
 
-                                let transporter = nodemailer.createTransport({
-                                    service: 'Gmail',
-                                    auth: {
-                                        user: 'mohjav031010@gmail.com',
-                                        pass: 'Javed@0348'
-                                    }
-                                });
-
-                                let mailOptions = {
-                                    from: 'no-reply@wepull.io',
-                                    to: userArray.email,
-                                    subject: 'WePull Account Creation',
-                                    html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
-                                        "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
-                                };
-
-                                await transporter.sendMail(mailOptions);
+                                // let transporter = nodemailer.createTransport({
+                                //     service: 'Gmail',
+                                //     auth: {
+                                //         user: 'mohjav031010@gmail.com',
+                                //         pass: 'Javed@0348'
+                                //     }
+                                // });
+                                //
+                                // let mailOptions = {
+                                //     from: 'no-reply@wepull.io',
+                                //     to: userArray.email,
+                                //     subject: 'WePull Account Creation',
+                                //     html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
+                                //         "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
+                                // };
+                                //
+                                // await transporter.sendMail(mailOptions);
 
                                 console.log("Sign up Working");
                                 res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
@@ -754,6 +754,7 @@ module.exports = {
                                     }
                                     //Get Expenses
                                     for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                        console.log("Expenseee",Expense);
                                         const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
                                         if(checkTenantExpenseResult[0].expense_count === 0) {
                                             if(Expense.Line.length===undefined) {
@@ -1348,6 +1349,7 @@ module.exports = {
             for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
                 // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
                 // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
+                console.log("Expenseee",Expense);
                 if(Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef) {
                     console.log("ClassRef",Expense.Line.AccountBasedExpenseLineDetail);
                 }
@@ -1652,7 +1654,8 @@ module.exports = {
                     }
                 }
             }
-            else {
+
+            if(departmentArray.IntuitResponse.QueryResponse.Department === undefined && classArray.IntuitResponse.QueryResponse.Class === undefined){
                 return res.json({
                     status: 200,
                     message: "No category found."

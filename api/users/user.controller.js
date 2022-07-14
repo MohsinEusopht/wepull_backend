@@ -286,10 +286,11 @@ module.exports = {
 
                 // let testAccount = await nodemailer.createTestAccount();
                 let transporter = nodemailer.createTransport({
-                    service: 'Gmail',
+                    host: "smtp.mailtrap.io",
+                    port: 2525,
                     auth: {
-                        user: 'mohjav031010@gmail.com',
-                        pass: 'Javed@0348'
+                        user: "21ab9120a4e35c",
+                        pass: "8e796bfbdcea51"
                     }
                 });
 
@@ -300,11 +301,22 @@ module.exports = {
                     html: "Welcome to WePull,<br/> Please setup your account detail at: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
                 };
 
-                await transporter.sendMail(mailOptions).catch(() => {
-                    return res.json({
-                        "status": "200",
-                        "message": "User created successfully, Email Failed"
-                    });
+                await transporter.sendMail(mailOptions, function(err, info) {
+                    if (err) {
+                        console.log("err",err)
+                        return res.json({
+                            "status": "200",
+                            "message": "User created successfully, Email Failed"
+                        });
+                    } else {
+                        console.log("info",info);
+                        return res.json({
+                            "status": "200",
+                            "message": "User created successfully",
+                            "data": createUsersResult,
+                            // "url": nodemailer.getTestMessageUrl(info)
+                        });
+                    }
                 });
 
                 // let transporter = nodemailer.createTransport({
@@ -330,13 +342,6 @@ module.exports = {
                 //
                 // console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 
-
-                return res.json({
-                    "status": "200",
-                    "message": "User created successfully",
-                    "data": createUsersResult,
-                    // "url": nodemailer.getTestMessageUrl(info)
-                });
             }
             else {
                 return res.json({
@@ -1066,17 +1071,18 @@ module.exports = {
 
 
             let transporter = nodemailer.createTransport({
-                service: 'Gmail',
+                host: "smtp.mailtrap.io",
+                port: 2525,
                 auth: {
-                    user: 'mohjav031010@gmail.com',
-                    pass: 'Javed@0348'
+                    user: "21ab9120a4e35c",
+                    pass: "8e796bfbdcea51"
                 }
             });
 
             let mailOptions = {
                 from: 'mohjav031010@gmail.com',
                 to: body.email,
-                subject: 'Wepull Password Reset',
+                subject: 'WePull Password Reset',
                 html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>"
             };
 

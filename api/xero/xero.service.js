@@ -48,10 +48,10 @@ module.exports = {
             );
         })
     },
-    addXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
+    addXeroExpense:(expense_id,line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO expenses(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id],
+                `INSERT INTO expenses(expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -62,10 +62,10 @@ module.exports = {
             );
         })
     },
-    updateXeroExpense:(expense_id, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
+    updateXeroExpense:(expense_id,line_item , created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_number = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ?, is_paid = ?, payment_ref_number = ?, paid_amount = ?, payment_date = ?  WHERE expense_id = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, expense_id],
+                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_number = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ?, is_paid = ?, payment_ref_number = ?, paid_amount = ?, payment_date = ?  WHERE expense_id = ? and line_item = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, expense_id, line_item],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -106,7 +106,7 @@ module.exports = {
         })
     },
     updateDepartment: (depart_id, main_category, depart_name,parent_depart,depart_status, company_id, is_class) => {
-        // console.log(`UPDATE departments SET depart_name = ${depart_id},main_category = ${main_category}, parent_depart = ${parent_depart}, depart_status = ${depart_status}, is_class = ${is_class} WHERE depart_id = ${depart_id} AND company_id = ${company_id}`);
+        console.log(`UPDATE departments SET depart_name = ${depart_id},main_category = ${main_category}, parent_depart = ${parent_depart}, depart_status = ${depart_status}, is_class = ${is_class} WHERE depart_id = ${depart_id} AND company_id = ${company_id}`);
         return new Promise((resolov, reject) => {
             pool.query(
                 `UPDATE departments SET depart_name = ?,main_category = ?, parent_depart = ?, depart_status = ?, is_class = ? WHERE depart_id = ? AND company_id = ?`, [depart_name, main_category ,parent_depart,depart_status, is_class, depart_id, company_id],
@@ -149,5 +149,19 @@ module.exports = {
             );
         })
     },
+    setAllDepartStatusToZero: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE departments SET depart_status = 0 WHERE company_id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        console.log(error);
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    }
     // createXeroAccount:(code, accountID, name, type, status, description, currencyCode, updatedDateUTC, company_id, user_id, company_type)
 };

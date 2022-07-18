@@ -79,6 +79,15 @@ let oauthClient = new OAuthClient({
 });
 
 
+function isEmptyObject(obj) {
+    for (let key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 async function get_user(access_token){
     let bearer = 'Bearer ' + access_token;
     // console.log(bearer);
@@ -166,15 +175,22 @@ async function get_accounts(access_token, companyID) {
     });
 
 }
-async function getPurchases(access_token, companyID) {
+async function getPurchases(access_token, companyID, condition) {
     const url =
         oauthClient.environment == 'sandbox'
             ? OAuthClient.environment.sandbox
             : OAuthClient.environment.production;
 
     let bearer = 'Bearer ' + access_token;
-    let query = 'select * from Purchase';
-    // console.log(bearer);
+    let query;
+    if(condition === "today") {
+        query = `select * from Purchase where MetaData.LastUpdatedTime >= '${new Date().toISOString()}'`;
+    }
+    else if (condition === "all") {
+        query = 'select * from Purchase';
+    }
+
+    console.log("query of purchase", query);
     let options = {
         'method': 'GET',
         'Accept': 'application/json',
@@ -297,15 +313,24 @@ async function getClasses(access_token, companyID) {
         });
     });
 }
-async function getVendors(access_token, companyID) {
+async function getVendors(access_token, companyID, condition) {
     const url =
         oauthClient.environment == 'sandbox'
             ? OAuthClient.environment.sandbox
             : OAuthClient.environment.production;
 
     let bearer = 'Bearer ' + access_token;
-    let query = 'select * from vendor WHERE Active IN (true,false)';
-    // console.log(bearer);
+
+    let query;
+    if(condition === "today") {
+        query = `select * from vendor WHERE Active IN (true,false) and MetaData.LastUpdatedTime >= '${new Date().toISOString()}'`;
+    }
+    else if (condition === "all") {
+        query = 'select * from vendor WHERE Active IN (true,false)';
+    }
+
+    // let query = 'select * from vendor WHERE Active IN (true,false)';
+    console.log("query", query);
     let options = {
         'method': 'GET',
         'Accept': 'application/json',
@@ -365,6 +390,66 @@ async function getAttachable(access_token, companyID, expense_id) {
 }
 
 
+async function refreshToken(email) {
+    // const getRefreshTokenResult = await getRefreshToken(email);
+    const getUserByUserEmailResult = await getUserByUserEmail(email);
+    const record = await getActivateCompany(getUserByUserEmailResult.id);
+    console.log("active Company", record[0]);
+    let expire_at = record[0].expire_at;
+    let ts = Number(expire_at); // cast it to a Number
+    // console.log("exipre_at",record[0].expire_at);
+    // console.log("Ts",ts);
+    const unixTimestamp = ts;
+    const milliseconds = unixTimestamp * 1000 // 1575909015000
+    const expire = new Date(milliseconds).toLocaleString();
+    let current_date = new Date().toLocaleString();
+    // console.log(ts);
+    // console.log(expire_at);
+    console.log("expire date", expire);
+    console.log("current_date", current_date);
+    if (current_date > expire) {
+        console.log("Expired");
+        await oauthClient
+            .refreshUsingToken(record[0].refresh_token)
+            .then(async function (authResponse) {
+                console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
+                oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
+                let array = JSON.parse(oauth2_token_json);
+                qb_access_token = array.access_token;
+                qb_refresh_token = array.refresh_token;
+                qb_id_token = array.id_token;
+                qb_expire_at = array.x_refresh_token_expires_in;
+
+                let now = new Date();
+                let time = now.getTime();
+                time += 3600 * 1000;
+                let expire_at = time.toString().substring(0,10);
+
+                const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
+                const updateCompanyTokenResult = await updateCompanyToken(record[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
+                console.log(updateRefreshTokenResult);
+
+                return array;
+                // return res.json({
+                //     status:200,
+                //     tokenSet: array
+                // });
+                // res.send(oauth2_token_json);
+            })
+            .catch(function (e) {
+                console.error(e);
+                return "Something went wrong";
+                // return res.json({
+                //     status:400,
+                //     message: "Something went wrong"
+                // });
+            });
+    }
+    else {
+        return "Not Expired";
+    }
+}
+
 let login_type = null;
 
 module.exports = {
@@ -404,10 +489,10 @@ module.exports = {
 
                     let company = await get_company(qb_access_token, jwtTokenDecode.realmid);
                     let accounts = await get_accounts(qb_access_token, jwtTokenDecode.realmid);
-                    let purchases = await getPurchases(qb_access_token, jwtTokenDecode.realmid);
+                    let purchases = await getPurchases(qb_access_token, jwtTokenDecode.realmid, "all");
                     let bills = await getBills(qb_access_token, jwtTokenDecode.realmid);
                     let departments = await getDepartments(qb_access_token, jwtTokenDecode.realmid);
-                    let vendors = await getVendors(qb_access_token, jwtTokenDecode.realmid);
+                    let vendors = await getVendors(qb_access_token, jwtTokenDecode.realmid, "all");
                     let classes = await getClasses(qb_access_token, jwtTokenDecode.realmid);
 
 
@@ -538,7 +623,7 @@ module.exports = {
 
                                 const token = crypto.randomBytes(48).toString('hex');
                                 const createUsersResult = await qbSignUp(userArray.givenName, userArray.familyName, userArray.email,userArray.phoneNumber, qb_access_token, qb_refresh_token, expire_at, token);
-                                const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
+                                const createCompanyResult = await createCompany(null ,jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null,'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,createUsersResult.insertId);
                                 // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
                                 const createUserRoleResult = await createUserRole(createUsersResult.insertId, createCompanyResult.insertId, null, 1, null);
                                 // const updateUserCompanyResult =
@@ -561,34 +646,20 @@ module.exports = {
                                 //Get Expense of tenant
 
                                 const Attachables = [];
-                                // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                                    if(Expense.Line.length===undefined) {
-                                        let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                        let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                        let com = c + " - " + d;
-                                        console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                                        if (Expense.PaymentType._text === "CreditCard") {
-                                            const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                            console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                                        }
-                                        else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                            const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
-                                            console.log("Expenses Added Cash: ", Expense.Id._text)
-                                        }
-                                    }
-                                    else{
-                                        for (let i=0;i<Expense.Line.length;i++) {
-                                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                            let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                            let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                console.log("purchaseArray.IntuitResponse.QueryResponse issssss",isEmptyObject(purchaseArray.IntuitResponse.QueryResponse));
+                                if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+                                    console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                }
+                                else {
+                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                    for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                        if(Expense.Line.length===undefined) {
+                                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
                                             let com = c + " - " + d;
-
-                                            console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                                             if (Expense.PaymentType._text === "CreditCard") {
-                                                // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                                const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                                                const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
                                                 console.log("Expenses Added Credit Card: ", Expense.Id._text)
                                             }
                                             else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
@@ -596,94 +667,160 @@ module.exports = {
                                                 console.log("Expenses Added Cash: ", Expense.Id._text)
                                             }
                                         }
-                                    }
+                                        else{
+                                            for (let i=0;i<Expense.Line.length;i++) {
+                                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                                let com = c + " - " + d;
 
-                                    const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
-                                    const attachableArray = JSON.parse(getAttachableResult);
-                                    // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-                                    if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                                        // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                                if (Expense.PaymentType._text === "CreditCard") {
+                                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                                                    console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                                }
+                                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                                    const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,getCompanyByTenantResult[0].id, getUserByUserEmailResult.id)
+                                                    console.log("Expenses Added Cash: ", Expense.Id._text)
+                                                }
+                                            }
+                                        }
+
+                                        const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
+                                        const attachableArray = JSON.parse(getAttachableResult);
+                                        // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                                        if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                                            // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+
+                                        }
+                                        else {
+                                            console.log("attachable is undefined");
+                                        }
 
                                     }
-                                    else {
-                                        console.log("attachable is undefined");
+                                    for (const Attachable of Attachables) {
+                                        console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                        let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                                        if(checkAttachableResult[0].attach_count === 0) {
+                                            let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                            console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                                        }
+                                        else {
+                                            let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                        }
                                     }
-
                                 }
-
                                 await storeActivity("Expenses Synced","-", "Expense", getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                for (const Attachable of Attachables) {
-                                    console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                    let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
-                                    if(checkAttachableResult[0].attach_count === 0) {
-                                        let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                        console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
-                                    }
-                                    else {
-                                        let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                                    }
-                                }
+
 
                                 //Get Departments
-                                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                    for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                        if (Department.SubDepartment._text.toString() === "true") {
-                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                            console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                        } else {
-                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                            console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
+                                    console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                }
+                                else {
+                                    if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                        for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                            if (Department.SubDepartment._text.toString() === "true") {
+                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            } else {
+                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                            }
                                         }
-                                    }
-                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                            // const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
-                                            // if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                            if(Class.SubClass._text.toString() === "true") {
-                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                        if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                            for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                                // const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                                                // if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                                }
+                                                // }
+                                                // else {
+                                                //     console.log("Found:", Class.Id._text)
+                                                //     if(Class.SubClass._text.toString() === "true") {
+                                                //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                //         console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                                                //     }
+                                                //     else {
+                                                //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                //         console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                                //     }
+                                                // }
                                             }
-                                            else {
-                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                            }
-                                            // }
-                                            // else {
-                                            //     console.log("Found:", Class.Id._text)
-                                            //     if(Class.SubClass._text.toString() === "true") {
-                                            //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                            //         console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
-                                            //     }
-                                            //     else {
-                                            //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                            //         console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                                            //     }
-                                            // }
                                         }
                                     }
                                 }
+
+                                if(isEmptyObject(classArray.IntuitResponse.QueryResponse)) {
+                                    console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                }
+                                else {
+                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
+                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                            }
+                                            else {
+                                                console.log("Found:", Class.Id._text)
+                                                if(Class.SubClass._text.toString() === "true") {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                                else {
+                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+
                                 await storeActivity("Categories Synced","-", "Category",getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
                                 //Get vendors
-                                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                        // const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
-                                        // if(checkTenantVendorResult[0].vendor_count === 0) {
-                                        // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                        // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                        // console.log("address",address);
-                                        console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                        const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                        console.log("added");
-                                        // }
-                                        // else {
-                                        //     console.log("found ",Vendor.Id._text);
-                                        //     const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                        //     console.log("updated");
-                                        // }
+                                if(isEmptyObject(vendorArray.IntuitResponse.QueryResponse)) {
+                                    console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                }
+                                else {
+                                    if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                        for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                            // const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,getCompanyByTenantResult[0].id);
+                                            // if(checkTenantVendorResult[0].vendor_count === 0) {
+                                            // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                            // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                            // console.log("address",address);
+                                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            console.log("added");
+                                            // }
+                                            // else {
+                                            //     console.log("found ",Vendor.Id._text);
+                                            //     const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                            //     console.log("updated");
+                                            // }
+                                        }
                                     }
                                 }
                                 await storeActivity("Suppliers Synced","-", "Supplier",getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+
+
                                 const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
 
                                 await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
@@ -739,7 +876,7 @@ module.exports = {
                                 if(getCompanyByTenantResult.length===0) {
                                     //Create company if not exist
 
-                                    const createCompanyResult = await createCompany(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
+                                    const createCompanyResult = await createCompany(null, jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null, 'USD',CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null,getUserByUserEmailResult.id);
                                     // const updateUserCompanyResult = await updateUserCompanyResult(createCompanyResult.insertId,createUsersResult.insertId);
                                     const createUserRoleResult = await createUserRole(getUserByUserEmailResult.id, createCompanyResult.insertId, null, 1, null);
                                     console.log("Created new company as ", createCompanyResult.insertId);
@@ -753,36 +890,22 @@ module.exports = {
                                         }
                                     }
                                     //Get Expenses
-                                    for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                                        console.log("Expenseee",Expense);
-                                        const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
-                                        if(checkTenantExpenseResult[0].expense_count === 0) {
-                                            if(Expense.Line.length===undefined) {
-                                                let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                                                let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                                                let com = c + " - " + d;
-                                                console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                                                if (Expense.PaymentType._text === "CreditCard") {
-                                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                                    console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                                                }
-                                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                                                    const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
-                                                    console.log("Expenses Added Cash: ", Expense.Id._text)
-                                                }
-                                            }
-                                            else{
-                                                for (let i=0;i<Expense.Line.length;i++) {
-                                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                                                    let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                                                    let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    const Attachables = [];
+                                    if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+                                        console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                    }
+                                    else {
+                                        for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                                            console.log("Expenseee",Expense);
+                                            const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,createCompanyResult.insertId);
+                                            if(checkTenantExpenseResult[0].expense_count === 0) {
+                                                if(Expense.Line.length===undefined) {
+                                                    let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                                    let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
                                                     let com = c + " - " + d;
-
-                                                    console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                                    console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                                                     if (Expense.PaymentType._text === "CreditCard") {
-                                                        // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
-                                                        const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                        const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text, createCompanyResult.insertId, getUserByUserEmailResult.id)
                                                         console.log("Expenses Added Credit Card: ", Expense.Id._text)
                                                     }
                                                     else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
@@ -790,20 +913,51 @@ module.exports = {
                                                         console.log("Expenses Added Cash: ", Expense.Id._text)
                                                     }
                                                 }
-                                            }
-                                            const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
-                                            const attachableArray = JSON.parse(getAttachableResult);
-                                            // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-                                            if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                                                // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                                Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                                else{
+                                                    for (let i=0;i<Expense.Line.length;i++) {
+                                                        // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                                        let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                                        let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                                        let com = c + " - " + d;
 
+                                                        console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                                        // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                                        if (Expense.PaymentType._text === "CreditCard") {
+                                                            // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                                            const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                            console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                                        }
+                                                        else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                                            const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,createCompanyResult.insertId, getUserByUserEmailResult.id)
+                                                            console.log("Expenses Added Cash: ", Expense.Id._text)
+                                                        }
+                                                    }
+                                                }
+                                                const getAttachableResult = await getAttachable(qb_access_token, jwtTokenDecode.realmid, Expense.Id._text);
+                                                const attachableArray = JSON.parse(getAttachableResult);
+                                                // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                                                if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                                                    // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                                    Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+
+                                                }
+                                                else {
+                                                    console.log("attachable is undefined");
+                                                }
+                                            }
+
+                                        }
+                                        for (const Attachable of Attachables) {
+                                            console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                            let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                                            if(checkAttachableResult[0].attach_count === 0) {
+                                                let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                                console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
                                             }
                                             else {
-                                                console.log("attachable is undefined");
+                                                let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                                             }
                                         }
-
                                     }
                                     // for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
                                     //     // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
@@ -900,77 +1054,95 @@ module.exports = {
 
 
                                     //Get Departments
-                                    if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                        for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                            const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
-                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                                if(Department.SubDepartment._text.toString() === "true") {
-                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                    if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
+                                        console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                    }
+                                    else {
+                                        if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                                            for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                                const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
+                                                if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                    if(Department.SubDepartment._text.toString() === "true") {
+                                                        const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    }
+                                                    else {
+                                                        const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    }
                                                 }
                                                 else {
-                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    console.log("Found:", Department.Id._text)
+                                                    if(Department.SubDepartment._text.toString() === "true") {
+                                                        const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    }
+                                                    else {
+                                                        const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    }
                                                 }
                                             }
-                                            else {
-                                                console.log("Found:", Department.Id._text)
-                                                if(Department.SubDepartment._text.toString() === "true") {
-                                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                        }
+
+                                    }
+                                    if(isEmptyObject(classArray.IntuitResponse.QueryResponse)) {
+                                        console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                    }
+                                    else {
+                                        if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                                            for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                                const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
+                                                if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                    if(Class.SubClass._text.toString() === "true") {
+                                                        const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                    }
+                                                    else {
+                                                        const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                    }
                                                 }
                                                 else {
-                                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                    console.log("Found:", Class.Id._text)
+                                                    if(Class.SubClass._text.toString() === "true") {
+                                                        const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                    }
+                                                    else {
+                                                        const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                        console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                    if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
-                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                                if(Class.SubClass._text.toString() === "true") {
-                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
-                                                else {
-                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
-                                            }
-                                            else {
-                                                console.log("Found:", Class.Id._text)
-                                                if(Class.SubClass._text.toString() === "true") {
-                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
-                                                else {
-                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
-                                            }
-                                        }
-                                    }
+
                                     //Get vendors
-                                    if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-                                        for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                                            const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,createCompanyResult.insertId);
-                                            if(checkTenantVendorResult[0].vendor_count === 0) {
-                                                // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                                                // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                                                // console.log("address",address);
-                                                console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                                const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                                console.log("added");
-                                            }
-                                            else {
-                                                console.log("found ",Vendor.Id._text);
-                                                const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                                                console.log("updated");
+                                    if(isEmptyObject(vendorArray.IntuitResponse.QueryResponse)) {
+                                        console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                                    }
+                                    else {
+                                        if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                                            for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                                                const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,createCompanyResult.insertId);
+                                                if(checkTenantVendorResult[0].vendor_count === 0) {
+                                                    // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                                                    // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                                                    // console.log("address",address);
+                                                    console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text==true?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                    const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                    console.log("added");
+                                                }
+                                                else {
+                                                    console.log("found ",Vendor.Id._text);
+                                                    const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                                                    console.log("updated");
+                                                }
                                             }
                                         }
                                     }
+
                                     // for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
                                     //     if(Department.SubDepartment._text.toString() === "true") {
                                     //         const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
@@ -1234,63 +1406,25 @@ module.exports = {
 
     },
     quickbook_refresh_token: async (req, res) => {
-        const email = req.params.email;
-        // const getRefreshTokenResult = await getRefreshToken(email);
-        const getUserByUserEmailResult = await getUserByUserEmail(email);
-        const record = await getActivateCompany(getUserByUserEmailResult.id);
-        console.log("active Company", record[0]);
-        let expire_at = record[0].expire_at;
-        let ts = Number(expire_at); // cast it to a Number
-        // console.log("exipre_at",record[0].expire_at);
-        // console.log("Ts",ts);
-        const unixTimestamp = ts;
-        const milliseconds = unixTimestamp * 1000 // 1575909015000
-        const expire = new Date(milliseconds).toLocaleString();
-        let current_date = new Date().toLocaleString();
-        // console.log(ts);
-        // console.log(expire_at);
-        console.log("expire date", expire);
-        console.log("current_date", current_date);
-        if (current_date > expire) {
-            console.log("Expired");
-            await oauthClient
-                .refreshUsingToken(record[0].refresh_token)
-                .then(async function (authResponse) {
-                    console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
-                    oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
-                    let array = JSON.parse(oauth2_token_json);
-                    qb_access_token = array.access_token;
-                    qb_refresh_token = array.refresh_token;
-                    qb_id_token = array.id_token;
-                    qb_expire_at = array.x_refresh_token_expires_in;
-
-                    let now = new Date();
-                    let time = now.getTime();
-                    time += 3600 * 1000;
-                    let expire_at = time.toString().substring(0,10);
-
-                    const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
-                    const updateCompanyTokenResult = await updateCompanyToken(record[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
-                    console.log(updateRefreshTokenResult);
-                    return res.json({
-                        status:200,
-                        tokenSet: array
-                    });
-                    // res.send(oauth2_token_json);
-                })
-                .catch(function (e) {
-                    console.error(e);
-                    return res.json({
-                        status:400,
-                        message: "Something went wrong"
-                    });
-                });
-        }
-        else {
+        const email = req.params.email
+        let token = await refreshToken(email);
+        if(token === "Not Expired") {
             console.log("Not Expired");
             return res.json({
                 status:200,
                 message: "Not Expired"
+            });
+        }
+        else if(token === "Something went wrong") {
+            return res.json({
+                status:400,
+                message: "Something went wrong"
+            });
+        }
+        else {
+            return res.json({
+                status:200,
+                tokenSet: token
             });
         }
 
@@ -1331,6 +1465,288 @@ module.exports = {
             message: "Accounts synced successfully!"
         })
     },
+    quickbookUpdateAllData: async (req, res) => {
+        try {
+            timeout(req, res, 500);
+
+            const user_id = req.params.user_id;
+            const company_id = req.params.company_id;
+            console.log("quickbookUpdateAllData user",user_id,"company",company_id );
+            const user = await editUser(user_id);
+            console.log("user",user);
+            let token = await refreshToken(user[0].email);
+
+            const record = await getActivateCompany(user_id);
+
+
+
+            const Attachables = [];
+            console.log("tenant:", record[0].tenant_id, record[0].access_token);
+
+            let purchases = await getPurchases(record[0].access_token, record[0].tenant_id, "all");
+            let purchaseArray = JSON.parse(purchases);
+
+            let vendors = await getVendors(record[0].access_token, record[0].tenant_id, "all");
+            let vendorArray = JSON.parse(vendors);
+
+            let departments = await getDepartments(record[0].access_token, record[0].tenant_id);
+            let classes = await getClasses(record[0].access_token, record[0].tenant_id);
+
+            let departmentArray = JSON.parse(departments);
+            let classArray = JSON.parse(classes);
+
+            console.log("purchase",purchaseArray);
+
+            //For Expenses
+            await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
+            console.log("purchaseArray.IntuitResponse.QueryResponse issssss",isEmptyObject(purchaseArray.IntuitResponse.QueryResponse));
+            if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                    // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
+                    // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
+                    console.log("Expenseee",Expense);
+                    if(Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef) {
+                        console.log("ClassRef",Expense.Line.AccountBasedExpenseLineDetail);
+                    }
+                    const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,company_id);
+                    if(checkTenantExpenseResult[0].expense_count === 0) {
+
+                        if(Expense.Line.length===undefined) {
+                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                            let com = c + " - " + d;
+                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                            if (Expense.PaymentType._text === "CreditCard") {
+                                const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                            }
+                            else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                console.log("Expenses Added Cash: ", Expense.Id._text)
+                            }
+                        }
+                        else{
+                            for (let i=0;i<Expense.Line.length;i++) {
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
+
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Cash: ", Expense.Id._text)
+                                }
+                            }
+                        }
+                        // if (Expense.PaymentType._text === "CreditCard") {
+                        //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                        //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                        // }
+                        // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                        //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                        //     console.log("Expenses Added Cash: ", Expense.Id._text)
+                        // }
+                    }
+                    else {
+                        console.log("Found:", Expense.Id._text)
+                        // console.log(Expense.Line[0].AccountBasedExpenseLineDetail.AccountRef._attributes.name);
+                        // this.stop();
+                        if(Expense.Line.length===undefined) {
+
+                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                            let com = c + " - " + d;
+                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                            if (Expense.PaymentType._text === "CreditCard") {
+                                const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                            }
+                            else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                console.log("Expenses Updated Cash: ", Expense.Id._text)
+                            }
+                        }
+                        else {
+                            for (let i=0;i<Expense.Line.length;i++) {
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
+
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                }
+                            }
+                        }
+
+                        // this.stop();
+                    }
+
+                    //Fetch attachable of expense
+                    const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , Expense.Id._text);
+                    const attachableArray = JSON.parse(getAttachableResult);
+                    // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                    if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                        // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                    }
+                    else {
+                        console.log("attachable is undefined");
+                    }
+                }
+                for (const Attachable of Attachables) {
+                    // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                    let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                    if(checkAttachableResult[0].attach_count === 0) {
+                        let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                        console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    }
+                    else {
+                        let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                        console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    }
+                }
+            }
+
+            //For Suppliers
+            await storeActivity("Suppliers Synced","-", "Supplier", company_id, user_id);
+            if(isEmptyObject(vendorArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                console.log("departments",vendorArray.IntuitResponse.QueryResponse.Vendor);
+                if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                    for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                        const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,company_id);
+                        if(checkTenantVendorResult[0].vendor_count === 0) {
+                            // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                            // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                            // console.log("address",address);
+                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                            const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                            console.log("added");
+                        }
+                        else {
+                            console.log("found ",Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null);
+                            console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text,"status", Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                            const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                            console.log("updated");
+                        }
+                    }
+                }
+                else {
+                    // return res.json({
+                    //     status: 200,
+                    //     message: "No Supplier Found!"
+                    // })
+                }
+            }
+
+            //For Categories
+            console.log("Categories Synced","-", "Category", company_id, user_id)
+            await storeActivity("Categories Synced","-", "Category", company_id, user_id);
+
+            // console.log("departments",departmentArray);
+            // console.log("classes", classArray.IntuitResponse.QueryResponse.Class);
+            if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
+                        if(checkTenantDepartmentResult[0].depart_count === 0) {
+                            if(Department.SubDepartment._text.toString() === "true") {
+                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                        }
+                        else {
+                            console.log("Found:", Department.Id._text)
+                            if(Department.SubDepartment._text.toString() === "true") {
+                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            if(isEmptyObject(classArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                    console.log("Class is not undefined");
+                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                        const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                        console.log("Class id",Class.Id._text);
+                        if(checkTenantDepartmentResult[0].depart_count === 0) {
+                            if(Class.SubClass._text.toString() === "true") {
+                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                        }
+                        else {
+                            console.log("Found:", Class.Id._text)
+                            if(Class.SubClass._text.toString() === "true") {
+                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                        }
+                    }
+                }
+            }
+            return res.json({
+                status: 200,
+                message: "All Data synced successfully!",
+                user: user,
+                company: record
+            })
+        } catch (err) {
+            // const error = JSON.stringify(err.response, null, 2)
+            console.log(err);
+            return res.json({
+                status: 500,
+                message: "Error while syncing all data, Please try again."
+            })
+        }
+
+    },
     syncExpenses: async (req, res) => {
         try {
             timeout(req, res, 500);
@@ -1341,46 +1757,32 @@ module.exports = {
 
             const Attachables = [];
             console.log("tenant:", record[0].tenant_id, record[0].access_token);
-            let purchases = await getPurchases(record[0].access_token, record[0].tenant_id);
+            let purchases = await getPurchases(record[0].access_token, record[0].tenant_id, "today");
             let purchaseArray = JSON.parse(purchases);
             console.log("purchase",purchaseArray);
 
             await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
-            for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
-                // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
-                // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
-                console.log("Expenseee",Expense);
-                if(Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef) {
-                    console.log("ClassRef",Expense.Line.AccountBasedExpenseLineDetail);
-                }
-                const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,company_id);
-                if(checkTenantExpenseResult[0].expense_count === 0) {
-
-                    if(Expense.Line.length===undefined) {
-                        let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                        let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                        let com = c + " - " + d;
-                        console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                        if (Expense.PaymentType._text === "CreditCard") {
-                            const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                            console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                        }
-                        else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                            const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                            console.log("Expenses Added Cash: ", Expense.Id._text)
-                        }
+            console.log("purchaseArray.IntuitResponse.QueryResponse issssss",isEmptyObject(purchaseArray.IntuitResponse.QueryResponse));
+            if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                    // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
+                    // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
+                    console.log("Expenseee",Expense);
+                    if(Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef) {
+                        console.log("ClassRef",Expense.Line.AccountBasedExpenseLineDetail);
                     }
-                    else{
-                        for (let i=0;i<Expense.Line.length;i++) {
-                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                            let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                            let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                            let com = c + " - " + d;
+                    const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,company_id);
+                    if(checkTenantExpenseResult[0].expense_count === 0) {
 
-                            console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                        if(Expense.Line.length===undefined) {
+                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                            let com = c + " - " + d;
+                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                             if (Expense.PaymentType._text === "CreditCard") {
-                                                                                                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
                                 const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
                                 console.log("Expenses Added Credit Card: ", Expense.Id._text)
                             }
@@ -1389,44 +1791,45 @@ module.exports = {
                                 console.log("Expenses Added Cash: ", Expense.Id._text)
                             }
                         }
-                    }
-                    // if (Expense.PaymentType._text === "CreditCard") {
-                    //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                    //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
-                    // }
-                    // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                    //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                    //     console.log("Expenses Added Cash: ", Expense.Id._text)
-                    // }
-                }
-                else {
-                    console.log("Found:", Expense.Id._text)
-                    // console.log(Expense.Line[0].AccountBasedExpenseLineDetail.AccountRef._attributes.name);
-                    // this.stop();
-                    if(Expense.Line.length===undefined) {
+                        else{
+                            for (let i=0;i<Expense.Line.length;i++) {
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
 
-                        let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
-                        let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                        let com = c + " - " + d;
-                        console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
-                        if (Expense.PaymentType._text === "CreditCard") {
-                            const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                            console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Cash: ", Expense.Id._text)
+                                }
+                            }
                         }
-                        else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
-                            const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
-                            console.log("Expenses Updated Cash: ", Expense.Id._text)
-                        }
+                        // if (Expense.PaymentType._text === "CreditCard") {
+                        //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                        //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                        // }
+                        // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                        //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                        //     console.log("Expenses Added Cash: ", Expense.Id._text)
+                        // }
                     }
                     else {
-                        for (let i=0;i<Expense.Line.length;i++) {
-                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
-                            let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
-                            let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
-                            let com = c + " - " + d;
+                        console.log("Found:", Expense.Id._text)
+                        // console.log(Expense.Line[0].AccountBasedExpenseLineDetail.AccountRef._attributes.name);
+                        // this.stop();
+                        if(Expense.Line.length===undefined) {
 
-                            console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
-                            // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                            let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                            let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                            let com = c + " - " + d;
+                            console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
                             if (Expense.PaymentType._text === "CreditCard") {
                                 const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
                                 console.log("Expenses Updated Credit Card: ", Expense.Id._text)
@@ -1436,34 +1839,53 @@ module.exports = {
                                 console.log("Expenses Updated Cash: ", Expense.Id._text)
                             }
                         }
+                        else {
+                            for (let i=0;i<Expense.Line.length;i++) {
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
+
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                }
+                            }
+                        }
+
+                        // this.stop();
                     }
 
-                    // this.stop();
+                    //Fetch attachable of expense
+                    const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , Expense.Id._text);
+                    const attachableArray = JSON.parse(getAttachableResult);
+                    // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                    if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                        // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                    }
+                    else {
+                        console.log("attachable is undefined");
+                    }
                 }
 
-                //Fetch attachable of expense
-                const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , Expense.Id._text);
-                const attachableArray = JSON.parse(getAttachableResult);
-                // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-                if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                    // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                    Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
-                }
-                else {
-                    console.log("attachable is undefined");
-                }
-            }
-
-            for (const Attachable of Attachables) {
-                // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
-                if(checkAttachableResult[0].attach_count === 0) {
-                    let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                    console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
-                }
-                else {
-                    let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                    console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                for (const Attachable of Attachables) {
+                    // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                    let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                    if(checkAttachableResult[0].attach_count === 0) {
+                        let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                        console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    }
+                    else {
+                        let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                        console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    }
                 }
             }
         } catch (err) {
@@ -1599,61 +2021,73 @@ module.exports = {
 
             console.log("departments",departmentArray);
             console.log("classes", classArray.IntuitResponse.QueryResponse.Class);
-            if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
-                    if(checkTenantDepartmentResult[0].depart_count === 0) {
-                        if(Department.SubDepartment._text.toString() === "true") {
-                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                            console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+            if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
+                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
+                        if(checkTenantDepartmentResult[0].depart_count === 0) {
+                            if(Department.SubDepartment._text.toString() === "true") {
+                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
                         }
                         else {
-                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                            console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
-                        }
-                    }
-                    else {
-                        console.log("Found:", Department.Id._text)
-                        if(Department.SubDepartment._text.toString() === "true") {
-                            const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                            console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
-                        }
-                        else {
-                            const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                            console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                            console.log("Found:", Department.Id._text)
+                            if(Department.SubDepartment._text.toString() === "true") {
+                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                            }
                         }
                     }
                 }
             }
 
-            if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                console.log("Class is not undefined");
-                for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                    const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
-                    console.log("Class id",Class.Id._text);
-                    if(checkTenantDepartmentResult[0].depart_count === 0) {
-                        if(Class.SubClass._text.toString() === "true") {
-                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                            console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
+
+            if(isEmptyObject(classArray.IntuitResponse.QueryResponse)) {
+                console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+            }
+            else {
+                if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
+                    console.log("Class is not undefined");
+                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                        const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                        console.log("Class id",Class.Id._text);
+                        if(checkTenantDepartmentResult[0].depart_count === 0) {
+                            if(Class.SubClass._text.toString() === "true") {
+                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
                         }
                         else {
-                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                            console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                        }
-                    }
-                    else {
-                        console.log("Found:", Class.Id._text)
-                        if(Class.SubClass._text.toString() === "true") {
-                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                            console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
-                        }
-                        else {
-                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                            console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                            console.log("Found:", Class.Id._text)
+                            if(Class.SubClass._text.toString() === "true") {
+                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
+                            else {
+                                const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                            }
                         }
                     }
                 }
             }
+
 
             if(departmentArray.IntuitResponse.QueryResponse.Department === undefined && classArray.IntuitResponse.QueryResponse.Class === undefined){
                 return res.json({
@@ -1683,37 +2117,43 @@ module.exports = {
         const record = await getActivateCompany(user_id);
         const user = await editUser(user_id);
         console.log("tenant:", record[0].tenant_id, record[0].access_token);
-        let vendors = await getVendors(record[0].access_token, record[0].tenant_id);
+        let vendors = await getVendors(record[0].access_token, record[0].tenant_id, "today");
         let vendorArray = JSON.parse(vendors);
 
         await storeActivity("Suppliers Synced","-", "Supplier", company_id, user_id);
 
-        console.log("departments",vendorArray.IntuitResponse.QueryResponse.Vendor);
-        if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
-            for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
-                const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,company_id);
-                if(checkTenantVendorResult[0].vendor_count === 0) {
-                    // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
-                    // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
-                    // console.log("address",address);
-                    console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                    const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                    console.log("added");
-                }
-                else {
-                    console.log("found ",Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null);
-                    console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text,"status", Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                    const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
-                    console.log("updated");
-                }
-            }
+        if(isEmptyObject(vendorArray.IntuitResponse.QueryResponse)) {
+            console.log("purchaseArray.IntuitResponse.QueryResponse is null");
         }
         else {
-            return res.json({
-                status: 200,
-                message: "No Supplier Found!"
-            })
+            console.log("departments",vendorArray.IntuitResponse.QueryResponse.Vendor);
+            if(vendorArray.IntuitResponse.QueryResponse.Vendor!=undefined) {
+                for(const Vendor of vendorArray.IntuitResponse.QueryResponse.Vendor) {
+                    const checkTenantVendorResult = await checkTenantVendor(Vendor.Id._text,company_id);
+                    if(checkTenantVendorResult[0].vendor_count === 0) {
+                        // vendor_id, name, V4IDPseudonym, phone, mobile, email, web, address, city, postal_code, balance, acct_num, currency, status, type, company_id, user_id, created_at, updated_at,
+                        // let address = Vendor.BillAddr!=undefined?Vendor.BillAddr:null;
+                        // console.log("address",address);
+                        console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                        const addVendorResult = await addVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                        console.log("added");
+                    }
+                    else {
+                        console.log("found ",Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null);
+                        console.log(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text,"status", Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                        const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', company_id, user_id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
+                        console.log("updated");
+                    }
+                }
+            }
+            else {
+                return res.json({
+                    status: 200,
+                    message: "No Supplier Found!"
+                })
+            }
         }
+
 
         return res.json({
             status: 200,

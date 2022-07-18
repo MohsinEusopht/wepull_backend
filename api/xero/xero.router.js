@@ -10,11 +10,13 @@ const {
     createXeroAccount,
     syncAccounts,
     syncExpenses,
+    xeroUpdateAllData,
     syncDepartments,
     viewAttachment,
     syncVendors,
     xero_callback_sign_up,
-    xero_url_sign_up
+    xero_url_sign_up,
+    xeroDisconnect
 } = require("./xero.controller");
 
 // router.get("/xero_check_login",xero_check_login);
@@ -23,6 +25,9 @@ router.get("/xero_url_sign_up",xero_url_sign_up);
 // router.get("")
 router.get("/xero_callback", xero_callback);
 router.get("/xero_callback_sign_up", xero_callback_sign_up);
+
+router.get("/disconnect/:user_id/:company_id", xeroDisconnect);
+
 router.get("/xero_refresh_token/:email", xero_refresh_token_function);
 router.get('/xero_get_tenants',validateAdminPermission, xero_get_tenants);
 router.post("/xero_login", xero_login);
@@ -36,5 +41,7 @@ router.get('/syncExpenses/:user_id/:company_id',validateAdminPermission, syncExp
 router.get('/syncDepartments/:user_id/:company_id',validateAdminPermission, syncDepartments);
 router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVendors);
 
+//Route for fetch all data
+router.get('/xeroUpdateAllData/:user_id/:company_id', xeroUpdateAllData);
 
 module.exports = router;

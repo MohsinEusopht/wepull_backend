@@ -6,6 +6,7 @@ const {
     quickbook_refresh_token,
     syncAccounts,
     syncExpenses,
+    quickbookUpdateAllData,
     activateCompany,
     syncDepartments,
     syncVendors,
@@ -24,6 +25,8 @@ router.get('/syncDepartments/:user_id/:company_id',validateAdminPermission, sync
 router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVendors);
 router.get('/syncAttachable/:expense_id/:company_id/:user_id', syncAttachable);
 
+//Route for fetch all data
+router.get('/quickbookUpdateAllData/:user_id/:company_id', quickbookUpdateAllData);
 
 
 module.exports = router;

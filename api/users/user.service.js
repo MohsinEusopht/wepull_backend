@@ -76,10 +76,10 @@ module.exports = {
             );
         })
     },
-    createCompany: (tenantId,company_name,createdDate,type , company_number, currency, company_type, industry_type, user_id) => {
+    createCompany: (connection_id, tenantId,company_name,createdDate,type , company_number, currency, company_type, industry_type, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO companies(tenant_id, company_name,company_number, currency, company_type, industry_type,create_date, type, user_id) VALUES (? ,? ,?, ?, ?, ?, ?, ?, ?)`, [tenantId ,company_name, company_number, currency, company_type, industry_type, createdDate, type, user_id],
+                `INSERT INTO companies(connection_id, tenant_id, company_name,company_number, currency, company_type, industry_type,create_date, type, user_id) VALUES (?, ? ,? ,?, ?, ?, ?, ?, ?, ?)`, [connection_id ,tenantId ,company_name, company_number, currency, company_type, industry_type, createdDate, type, user_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -680,10 +680,10 @@ module.exports = {
             );
         })
     },
-    updateXeroLoginToken: (email, token, xero_id_token,xero_access_token, xero_refresh_token, xero_expire_at) => {
+    updateXeroLoginToken: (email, token, xero_id_token,xero_access_token, xero_refresh_token, xero_expire_at, status) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE users SET login_token = ?, xero_id_token = ?,xero_access_token = ?,xero_refresh_token = ?,xero_expire_at = ? WHERE email = ?`, [token, xero_id_token,xero_access_token, xero_refresh_token, xero_expire_at, email],
+                `UPDATE users SET login_token = ?, xero_id_token = ?,xero_access_token = ?,xero_refresh_token = ?,xero_expire_at = ?, status = ? WHERE email = ?`, [token, xero_id_token,xero_access_token, xero_refresh_token, xero_expire_at, status, email],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -1401,4 +1401,174 @@ module.exports = {
             );
         })
     },
+    foreignKeyCheck: (data) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SET foreign_key_checks = ?;`, [data],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeAccounts: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM accounts WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeActivities: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM activities WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeExpenses: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM expenses WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeAttachables: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM attachables WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeDepartments: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM departments WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeUserRelations: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM user_relations WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeVendors: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM vendors WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeCompany: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM companies WHERE id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    removeUsersOfCompany: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM users WHERE company_id=?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    updateUserStatus: (user_id, status) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE users SET status = ? WHERE id = ?`, [status, user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    setForeignKeyDisable: (table) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `ALTER TABLE ${table} DISABLE KEYS;`, [],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        });
+    },
+    setForeignKeyEnable: (table) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `ALTER TABLE ${table} ENABLE KEYS;`, [],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        });
+    }
+
 };

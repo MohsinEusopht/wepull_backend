@@ -1202,26 +1202,6 @@ module.exports = {
             });
         }
     },
-    activateCompany: async  (req, res) => {
-        try {
-            const body = req.body;
-            const disableAllCompanyResult = await disableAllCompany(body.user_id);
-            const activateCompanyResult = await activateCompany(body.selectedCompany);
-
-            // const company = await getActivateCompany(body.user_id);
-            //
-            // console.log(company);
-            return res.json({
-                success: 1,
-                message: "Company Activated Successfully"
-            });
-        } catch (e) {
-            console.log(e.message);
-            return res.status(404).json({
-                message: "Error: " + e.message,
-            });
-        }
-    },
     activateDepart: async  (req, res) => {
         try {
             const body = req.body;

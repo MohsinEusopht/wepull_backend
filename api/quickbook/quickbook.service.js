@@ -132,10 +132,10 @@ module.exports = {
             );
         })
     },
-    updateCompanyToken: (tenant_id, qb_access_token, qb_refresh_token, qb_expire_at) => {
+    updateCompanyToken: (tenant_id, id_token, qb_access_token, qb_refresh_token, qb_expire_at) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE companies SET access_token = ?, refresh_token = ?,expire_at = ? WHERE tenant_id = ?`, [qb_access_token, qb_refresh_token, qb_expire_at,tenant_id],
+                `UPDATE companies SET id_token = ?, access_token = ?, refresh_token = ?,expire_at = ? WHERE tenant_id = ?`, [id_token ,qb_access_token, qb_refresh_token, qb_expire_at,tenant_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -230,4 +230,17 @@ module.exports = {
         );
     })
 },
+    qbgetCompanyById: (company_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `select * from companies where id = ?`, [company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
 };

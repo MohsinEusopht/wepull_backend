@@ -94,7 +94,6 @@ router.get('/getCompanyByID/:company_id', getCompanyByID);
 router.get('/getActiveCompany/:user_id', getActiveCompany);
 router.get('/getCompanyByTenant/:tenant_id',validateUserPermission, getCompanyByTenant);
 router.get('/getCompanyAccount/:user_id',validateAdminPermission, getCompanyAccount);
-router.post('/activateCompany', activateCompany);
 router.get('/getActivateCompany/:user_id', getActivateCompany);
 
 //User apis

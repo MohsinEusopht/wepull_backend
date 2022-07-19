@@ -694,10 +694,10 @@ module.exports = {
             );
         })
     },
-    updateQuickbookLoginToken: (email, token, qb_access_token, qb_refresh_token, qb_expire_at) => {
+    updateQuickbookLoginToken: (email, token, qb_access_token, qb_refresh_token, qb_expire_at, status) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE users SET login_token = ?,quickbook_access_token = ?,quickbook_refresh_token = ?,quickbook_exipre_at = ? WHERE email = ?`, [token, qb_access_token, qb_refresh_token, qb_expire_at, email],
+                `UPDATE users SET login_token = ?,quickbook_access_token = ?,quickbook_refresh_token = ?,quickbook_exipre_at = ?,status = ? WHERE email = ?`, [token, qb_access_token, qb_refresh_token, qb_expire_at, status, email],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

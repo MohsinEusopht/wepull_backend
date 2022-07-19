@@ -17,7 +17,8 @@ const{
     updateAttachable,
     checkTenantVendor,
     addVendor,
-    updateVendor
+    updateVendor,
+    qbgetCompanyById
 } = require("./quickbook.service");
 
 const {
@@ -40,8 +41,22 @@ const {
     updateCompanyInfo,
     checkAttachable,
     updateUserCompanyResult,
-    getCompanyByID,
-    storeActivity
+    storeActivity,
+    getUserById,
+    removeAccounts,
+    removeActivities,
+    removeExpenses,
+    removeAttachables,
+    removeDepartments,
+    removeUserRelations,
+    removeVendors,
+    removeCompany,
+    updateUserStatus,
+    removeUsersOfCompany,
+    setForeignKeyDisable,
+    setForeignKeyEnable,
+    getCompany,
+    getUserByEmail
 } = require("../users/user.service");
 
 const jwt = require('jsonwebtoken');
@@ -135,6 +150,41 @@ async function get_company(access_token, companyID) {
             if (!error && res.statusCode == 200) {
                 let result = convert.xml2json(body, {compact: true, spaces: 4});
                 //console.log(result);
+                resolve(result);
+            } else {
+                reject(error);
+            }
+        });
+    });
+
+}
+
+async function revoke_token(access_token) {
+    const url =
+        oauthClient.environment == 'sandbox'
+            ? OAuthClient.environment.sandbox
+            : OAuthClient.environment.production;
+
+    let bearer = 'Bearer ' + access_token;
+    // let query = 'select * from Account where Active = true';
+    // console.log(bearer);
+    let options = {
+        'method': 'POST',
+        'url': `https://developer.api.intuit.com/v2/oauth2/tokens/revoke`,
+        'body': {
+            access_token : access_token
+        },
+        'headers': {
+            'Authorization': bearer,
+        }
+    };
+    // console.log("option:",options);
+    // let array = [];
+    return new Promise(function (resolve, reject) {
+        request(options, function (error, res, body) {
+            console.log("revoke result" ,res);
+            if (!error) {
+                let result = convert.xml2json(body, {compact: true, spaces: 4});
                 resolve(result);
             } else {
                 reject(error);
@@ -388,8 +438,6 @@ async function getAttachable(access_token, companyID, expense_id) {
         });
     });
 }
-
-
 async function refreshToken(email) {
     // const getRefreshTokenResult = await getRefreshToken(email);
     const getUserByUserEmailResult = await getUserByUserEmail(email);
@@ -426,7 +474,7 @@ async function refreshToken(email) {
                 let expire_at = time.toString().substring(0,10);
 
                 const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
-                const updateCompanyTokenResult = await updateCompanyToken(record[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
+                const updateCompanyTokenResult = await updateCompanyToken(record[0].tenant_id, qb_id_token, qb_access_token, qb_refresh_token, expire_at);
                 console.log(updateRefreshTokenResult);
 
                 return array;
@@ -480,32 +528,45 @@ module.exports = {
                     qb_id_token = array.id_token;
                     qb_expire_at = array.x_refresh_token_expires_in;
                     const jwtTokenDecode = jwt.decode(qb_id_token);
+
+                    console.log("id token: ", qb_id_token);
                     // console.log("realmid: ",jwtTokenDecode.realmid);
 
                     // console.log("ID TOKEN AFTER:",jwtTokenDecode);
                     let authToken = oauthClient.getToken().getToken();
                     oauthClient.setToken(authToken);
                     let resp = await get_user(qb_access_token);
-
                     let company = await get_company(qb_access_token, jwtTokenDecode.realmid);
-                    let accounts = await get_accounts(qb_access_token, jwtTokenDecode.realmid);
-                    let purchases = await getPurchases(qb_access_token, jwtTokenDecode.realmid, "all");
-                    let bills = await getBills(qb_access_token, jwtTokenDecode.realmid);
-                    let departments = await getDepartments(qb_access_token, jwtTokenDecode.realmid);
-                    let vendors = await getVendors(qb_access_token, jwtTokenDecode.realmid, "all");
-                    let classes = await getClasses(qb_access_token, jwtTokenDecode.realmid);
+
+                    let userArray = null;
+                    let companyArray = null;
+                    let accountArray = null;
+                    let purchaseArray = null;
+                    let billArray = null;
+                    let departmentArray = null;
+                    let vendorArray = null;
+                    let classArray = null;
+
+                    userArray = JSON.parse(resp);
+                    companyArray = JSON.parse(company);
+                    if(login_type === "sign_up" || login_type === "connect") {
+
+                        let accounts = await get_accounts(qb_access_token, jwtTokenDecode.realmid);
+                        let purchases = await getPurchases(qb_access_token, jwtTokenDecode.realmid, "all");
+                        let bills = await getBills(qb_access_token, jwtTokenDecode.realmid);
+                        let departments = await getDepartments(qb_access_token, jwtTokenDecode.realmid);
+                        let vendors = await getVendors(qb_access_token, jwtTokenDecode.realmid, "all");
+                        let classes = await getClasses(qb_access_token, jwtTokenDecode.realmid);
 
 
+                        accountArray = JSON.parse(accounts);
+                        purchaseArray = JSON.parse(purchases);
+                        billArray = JSON.parse(bills);
+                        departmentArray = JSON.parse(departments);
+                        vendorArray = JSON.parse(vendors);
+                        classArray = JSON.parse(classes);
 
-
-                    let userArray = JSON.parse(resp);
-                    let companyArray = JSON.parse(company);
-                    let accountArray = JSON.parse(accounts);
-                    let purchaseArray = JSON.parse(purchases);
-                    let billArray = JSON.parse(bills);
-                    let departmentArray = JSON.parse(departments);
-                    let vendorArray = JSON.parse(vendors);
-                    let classArray = JSON.parse(classes);
+                    }
 
                     const checkUserEmailResult = await checkUserEmail(userArray.email);
 
@@ -514,6 +575,7 @@ module.exports = {
                     console.log("company ID: ",jwtTokenDecode.realmid);
                     console.log(jwtTokenDecode.realmid,companyArray.IntuitResponse.CompanyInfo.CompanyName._text,companyArray.IntuitResponse.CompanyInfo.MetaData.CreateTime._text, companyArray.IntuitResponse.CompanyInfo._attributes.domain, null);
 
+                    let getuser = await getUserByEmail(userArray.email);
 
                     let now = new Date();
                     let time = now.getTime();
@@ -523,31 +585,69 @@ module.exports = {
 
                     if(checkUserXeroResult[0].count_xero==0) {
                         if(login_type === "sign_in") {
-                            const checkUserEmailResult = await checkUserEmail(userArray.email);
-                            const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
-                            console.log("getCompanyByTenantResult",getCompanyByTenantResult.length);
-                            if(getCompanyByTenantResult.length>0) {
-                                if(checkUserEmailResult[0].count_user === 0) {
-                                    const checkUserCompanyResultt = await checkUserCompanyByTenant(jwtTokenDecode.realmid);
-                                    console.log("checkUserCompanyResult[0].count_company",checkUserCompanyResultt[0].count_company);
-                                    if (checkUserCompanyResultt[0].count_company === 1) {
-                                        // const checkUserEmailResultt = await checkUserEmail(email);
-                                        // if(checkUserCompanyResultt.count_user === 0) {
-                                        const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid);
-                                        console.log(getCompanyByTenantResult[0].user_id)
-                                        const updateXeroAccountEmailResult = await updateXeroAccountEmail(getCompanyByTenantResult[0].user_id, userArray.email);
+                            //checkuser
+                            if(getuser[0].status === 0) {
+                                const checkUserEmailResult = await checkUserEmail(userArray.email);
+                                const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
+                                console.log("getCompanyByTenantResult",getCompanyByTenantResult.length);
+                                if(getCompanyByTenantResult.length>0) {
+                                    if(checkUserEmailResult[0].count_user === 0) {
+                                        const checkUserCompanyResultt = await checkUserCompanyByTenant(jwtTokenDecode.realmid);
+                                        console.log("checkUserCompanyResult[0].count_company",checkUserCompanyResultt[0].count_company);
+                                        if (checkUserCompanyResultt[0].count_company === 1) {
+                                            // const checkUserEmailResultt = await checkUserEmail(email);
+                                            // if(checkUserCompanyResultt.count_user === 0) {
+                                            const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid);
+                                            console.log(getCompanyByTenantResult[0].user_id)
+                                            const updateXeroAccountEmailResult = await updateXeroAccountEmail(getCompanyByTenantResult[0].user_id, userArray.email);
 
-                                        console.log("User Email",userArray.email);
-                                        // console.log("User first_name",first_name);
-                                        // console.log("User last_name",last_name);
-                                        // console.log("User name",name);
-                                        console.log("direct login");
+                                            console.log("User Email",userArray.email);
+                                            // console.log("User first_name",first_name);
+                                            // console.log("User last_name",last_name);
+                                            // console.log("User name",name);
+                                            console.log("direct login");
+                                            const token = crypto.randomBytes(48).toString('hex');
+                                            const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at,1);
+                                            const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_id_token, qb_access_token, qb_refresh_token, expire_at);
+                                            const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
+                                            await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                            await activeQuickbookAccount(jwtTokenDecode.realmid);
+
+                                            // {
+                                            //     "Name": "IndustryType",
+                                            //     "Value": "Electronic computer manufacturing"
+                                            // },
+                                            // {
+                                            //     "Name": "CompanyType",
+                                            //     "Value": "Sole Proprietor"
+                                            // }
+                                            let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
+
+                                            let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
+                                            let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
+
+                                            const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
+                                            console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text)
+                                            // console.log("IndustryType",IndustryType);
+                                            // console.log("CompanyType",CompanyType);
+                                            // console.log("CompanyType",CompanyType[0].Value._text);
+                                            console.log("updateCompanyTokenResult");
+                                            console.log("Login Working 1");
+                                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                            // }
+                                        }
+                                        else {
+                                            res.redirect(`${process.env.APP_URL}login/error/404`);
+                                        }
+                                    }
+                                    else {
+                                        //Login execution
                                         const token = crypto.randomBytes(48).toString('hex');
-                                        const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
-                                        const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                        const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at,1);
                                         const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
-                                        await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
-                                        await activeQuickbookAccount(jwtTokenDecode.realmid);
+                                        const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
+                                        console.log("compny lenght:",getCompanyByTenantResult.length);
+                                        console.log("compny:",getCompanyByTenantResult);
 
                                         // {
                                         //     "Name": "IndustryType",
@@ -561,56 +661,31 @@ module.exports = {
 
                                         let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
                                         let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
-
                                         const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
-                                        console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text)
-                                        // console.log("IndustryType",IndustryType);
-                                        // console.log("CompanyType",CompanyType);
-                                        // console.log("CompanyType",CompanyType[0].Value._text);
+                                        console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
+
+                                        const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_id_token, qb_access_token, qb_refresh_token, expire_at);
+                                        await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
+                                        await activeQuickbookAccount(jwtTokenDecode.realmid);
                                         console.log("updateCompanyTokenResult");
                                         console.log("Login Working");
-                                        res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
-                                        // }
-                                    }
-                                    else {
-                                        res.redirect(`${process.env.APP_URL}login/error/404`);
+                                        if(login_type === "connect") {
+                                            res.redirect(`${process.env.APP_URL}companies`);
+                                        }
+                                        else {
+                                            res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                        }
+
                                     }
                                 }
                                 else {
-                                    //Login execution
-                                    const token = crypto.randomBytes(48).toString('hex');
-                                    const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
-                                    const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
-                                    const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
-                                    console.log("compny lenght:",getCompanyByTenantResult.length);
-                                    console.log("compny:",getCompanyByTenantResult);
-
-                                    // {
-                                    //     "Name": "IndustryType",
-                                    //     "Value": "Electronic computer manufacturing"
-                                    // },
-                                    // {
-                                    //     "Name": "CompanyType",
-                                    //     "Value": "Sole Proprietor"
-                                    // }
-                                    let NameValue = companyArray.IntuitResponse.CompanyInfo.NameValue;
-
-                                    let IndustryType = NameValue.filter(el => el.Name._text === 'IndustryType');
-                                    let CompanyType = NameValue.filter(el => el.Name._text === 'CompanyType');
-                                    const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
-                                    console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
-
-                                    const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
-                                    await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
-                                    await activeQuickbookAccount(jwtTokenDecode.realmid);
-                                    console.log("updateCompanyTokenResult");
-                                    console.log("Login Working");
-                                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                    console.log("company_not_exist");
+                                    res.redirect(`${process.env.APP_URL}login/error/company_not_exist`);
                                 }
                             }
-                            else {
-                                console.log("company_not_exist");
-                                res.redirect(`${process.env.APP_URL}login/error/company_not_exist`);
+                            else{
+                                res.redirect(`${process.env.APP_URL}login/error/company_disconnected`);
+                                // res.redirect(`${process.env.APP_URL}account/disconnected`);
                             }
                         }
                         else if(login_type === "sign_up" || login_type === "connect") {
@@ -821,7 +896,7 @@ module.exports = {
                                 await storeActivity("Suppliers Synced","-", "Supplier",getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
 
 
-                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_id_token, qb_access_token, qb_refresh_token, expire_at);
 
                                 await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
                                 await activeQuickbookAccount(jwtTokenDecode.realmid);
@@ -844,14 +919,22 @@ module.exports = {
                                 //
                                 // await transporter.sendMail(mailOptions);
 
-                                console.log("Sign up Working");
-                                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
+
+                                if(login_type === "connect") {
+                                    console.log("Connect Working");
+                                    res.redirect(`${process.env.APP_URL}companies`);
+                                }
+                                else {
+                                    console.log("Signup Working");
+                                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
+                                }
+
                             }
                             else {
 
                                 //Login execution
                                 const token = crypto.randomBytes(48).toString('hex');
-                                const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at);
+                                const updateLoginTokenResult = await updateQuickbookLoginToken(userArray.email, token, qb_access_token, qb_refresh_token, expire_at,1);
                                 const getUserByUserEmailResult = await getUserByUserEmail(userArray.email);
                                 const getCompanyByTenantResult = await getCompanyByTenant(jwtTokenDecode.realmid)
                                 console.log("compny lenght:",getCompanyByTenantResult.length);
@@ -890,6 +973,7 @@ module.exports = {
                                         }
                                     }
                                     //Get Expenses
+                                    await storeActivity("Expenses Synced", "-", "Expense", createCompanyResult.insertId, getUserByUserEmailResult.id);
                                     const Attachables = [];
                                     if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
                                         console.log("purchaseArray.IntuitResponse.QueryResponse is null");
@@ -948,14 +1032,14 @@ module.exports = {
 
                                         }
                                         for (const Attachable of Attachables) {
-                                            console.log("attachable", Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                            console.log("attachable", Attachable.AttachableRef.EntityRef._text, createCompanyResult.insertId, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                                             let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
                                             if(checkAttachableResult[0].attach_count === 0) {
-                                                let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                                let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, createCompanyResult.insertId, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                                                 console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
                                             }
                                             else {
-                                                let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, getCompanyByTenantResult[0].id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                                                let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, createCompanyResult.insertId, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                                             }
                                         }
                                     }
@@ -1054,6 +1138,7 @@ module.exports = {
 
 
                                     //Get Departments
+                                    await storeActivity("Categories Synced", "-", "Category", createCompanyResult.insertId, getUserByUserEmailResult.id);
                                     if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
                                         console.log("purchaseArray.IntuitResponse.QueryResponse is null");
                                     }
@@ -1119,6 +1204,7 @@ module.exports = {
                                     }
 
                                     //Get vendors
+                                    await storeActivity("Suppliers Synced", "-", "Supplier", createCompanyResult.insertId, getUserByUserEmailResult.id);
                                     if(isEmptyObject(vendorArray.IntuitResponse.QueryResponse)) {
                                         console.log("purchaseArray.IntuitResponse.QueryResponse is null");
                                     }
@@ -1135,6 +1221,7 @@ module.exports = {
                                                     console.log("added");
                                                 }
                                                 else {
+                                                    console.log("found ",Vendor.Id._text);
                                                     console.log("found ",Vendor.Id._text);
                                                     const addVendorResult = await updateVendor(Vendor.Id._text, Vendor.DisplayName._text, Vendor.PrimaryPhone!=null?Vendor.PrimaryPhone.FreeFormNumber._text:null, Vendor.Mobile!=null?Vendor.Mobile.FreeFormNumber._text:null, Vendor.PrimaryEmailAddr!=null?Vendor.PrimaryEmailAddr.Address._text:null, Vendor.WebAddr!=null?Vendor.WebAddr.URI._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.Line1._text:null,Vendor.BillAddr!=undefined?Vendor.BillAddr.City._text:null, null, Vendor.BillAddr!=undefined?Vendor.BillAddr.CountrySubDivisionCode._text:null, Vendor.BillAddr!=undefined?Vendor.BillAddr.PostalCode._text:null, Vendor.Balance._text, Vendor.AcctNum!=null?Vendor.AcctNum._text:null, Vendor.CurrencyRef._text, Vendor.Active._text.toString()==="true"?1:0, 'quickbooks', createCompanyResult.insertId, getUserByUserEmailResult.id, Vendor.MetaData.CreateTime._text,Vendor.MetaData.LastUpdatedTime._text);
                                                     console.log("updated");
@@ -1377,12 +1464,18 @@ module.exports = {
                                     const updateCompanyCodeResult = await updateCompanyInfo(jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text,CompanyType[0]!=undefined||null?CompanyType[0].Value._text:null,IndustryType[0]!=undefined||null?IndustryType[0].Value._text:null);
                                     console.log("UPDATE WHILE LOGIN:",jwtTokenDecode.realmid, 'USD',companyArray.IntuitResponse.CompanyInfo.CompanyName._text);
                                 }
-                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_access_token, qb_refresh_token, expire_at);
+                                const updateCompanyTokenResult = await updateCompanyToken(jwtTokenDecode.realmid, qb_id_token, qb_access_token, qb_refresh_token, expire_at);
                                 await disableAllQuickbookAccounts(getUserByUserEmailResult.id);
                                 await activeQuickbookAccount(jwtTokenDecode.realmid);
                                 console.log("updateCompanyTokenResult");
                                 console.log("Login Working");
-                                res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                if(login_type === "connect") {
+                                    res.redirect(`${process.env.APP_URL}companies`);
+                                }
+                                else {
+                                    res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/1/`+ token + `/sign_in`);
+                                }
+
                             }
                         }
                     }
@@ -1909,91 +2002,104 @@ module.exports = {
             const disableAllCompanyResult = await disableAllCompany(body.user_id);
             const activateCompanyResult = await activateCompany(body.selectedCompany);
 
-            const company = await getActivateCompany(body.user_id);
+            // const user = await getUserByUserEmail(body.email);
+            await refreshToken(body.email)
+            const company = await qbgetCompanyById(body.selectedCompany);
 
-             console.log(company[0].expire_at);
+            let authToken = oauthClient.getToken().setToken({
+                "token_type": "bearer",
+                "expires_in": 3600,
+                "refresh_token":company[0].refresh_token,
+                "x_refresh_token_expires_in":company[0].expire_at,
+                "access_token":company[0].access_token
+            });
 
-             if(company[0].expire_at!== null) {
-                 let expire_at = company[0].expire_at;
-                 let ts = Number(expire_at); // cast it to a Number
-                 const unixTimestamp = ts;
-                 const milliseconds = unixTimestamp * 1000 // 1575909015000
-                 const expire = new Date(milliseconds).toLocaleString();
-                 let current_date = new Date().toLocaleString();
-                 console.log(ts);
-                 console.log(expire_at);
-                 console.log("exipre date", expire);
-                 console.log("current_date", current_date);
-                 if (current_date > expire) {
-                     console.log("Expired");
-                     oauthClient
-                         .refreshUsingToken(company[0].refresh_token)
-                         .then(async function (authResponse) {
-                             console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
-                             oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
-                             let array = JSON.parse(oauth2_token_json);
-                             qb_access_token = array.access_token;
-                             qb_refresh_token = array.refresh_token;
-                             qb_id_token = array.id_token;
-                             qb_expire_at = array.x_refresh_token_expires_in;
+            authToken.re
 
-                             let now = new Date();
-                             let time = now.getTime();
-                             time += 3600 * 1000;
-                             let expire_at = time.toString().substring(0,10);
-
-                             // const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
-                             const updateCompanyTokenResult = await updateCompanyToken(company[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
-                             console.log(updateCompanyTokenResult);
-                             // return res.json({
-                             //     status:200,
-                             //     tokenSet: array
-                             // });
-                             // res.send(oauth2_token_json);
-                         })
-                         .catch(function (e) {
-                             console.error(e);
-                         });
-                 }
-                 else {
-                     console.log("Not Expired");
-                 }
-             }
-             else {
-                 console.log("Null");
-                 oauthClient
-                     .refreshUsingToken(company[0].refresh_token)
-                     .then(async function (authResponse) {
-                         console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
-                         oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
-                         let array = JSON.parse(oauth2_token_json);
-                         qb_access_token = array.access_token;
-                         qb_refresh_token = array.refresh_token;
-                         qb_id_token = array.id_token;
-                         qb_expire_at = array.x_refresh_token_expires_in;
-
-                         let now = new Date();
-                         let time = now.getTime();
-                         time += 3600 * 1000;
-                         let expire_at = time.toString().substring(0,10);
-
-                         // const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
-                         const updateCompanyTokenResult = await updateCompanyToken(company[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
-                         console.log(updateCompanyTokenResult);
-                         // return res.json({
-                         //     status:200,
-                         //     tokenSet: array
-                         // });
-                         // res.send(oauth2_token_json);
-                     })
-                     .catch(function (e) {
-                         console.error(e);
-                     });
-             }
+             // console.log(company[0].expire_at);
+             //
+             // if(company[0].expire_at!== null) {
+             //     let expire_at = company[0].expire_at;
+             //     let ts = Number(expire_at); // cast it to a Number
+             //     const unixTimestamp = ts;
+             //     const milliseconds = unixTimestamp * 1000 // 1575909015000
+             //     const expire = new Date(milliseconds).toLocaleString();
+             //     let current_date = new Date().toLocaleString();
+             //     console.log(ts);
+             //     console.log(expire_at);
+             //     console.log("exipre date", expire);
+             //     console.log("current_date", current_date);
+             //     if (current_date > expire) {
+             //         console.log("Expired");
+             //         oauthClient
+             //             .refreshUsingToken(company[0].refresh_token)
+             //             .then(async function (authResponse) {
+             //                 console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
+             //                 oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
+             //                 let array = JSON.parse(oauth2_token_json);
+             //                 qb_access_token = array.access_token;
+             //                 qb_refresh_token = array.refresh_token;
+             //                 qb_id_token = array.id_token;
+             //                 qb_expire_at = array.x_refresh_token_expires_in;
+             //
+             //                 let now = new Date();
+             //                 let time = now.getTime();
+             //                 time += 3600 * 1000;
+             //                 let expire_at = time.toString().substring(0,10);
+             //
+             //                 // const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
+             //                 const updateCompanyTokenResult = await updateCompanyToken(company[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
+             //                 console.log(updateCompanyTokenResult);
+             //                 // return res.json({
+             //                 //     status:200,
+             //                 //     tokenSet: array
+             //                 // });
+             //                 // res.send(oauth2_token_json);
+             //             })
+             //             .catch(function (e) {
+             //                 console.error(e);
+             //             });
+             //     }
+             //     else {
+             //         console.log("Not Expired");
+             //     }
+             // }
+             // else {
+             //     console.log("Null");
+             //     oauthClient
+             //         .refreshUsingToken(company[0].refresh_token)
+             //         .then(async function (authResponse) {
+             //             console.log(`The Refresh Token is  ${JSON.stringify(authResponse.getJson())}`);
+             //             oauth2_token_json = JSON.stringify(authResponse.getJson(), null, 2);
+             //             let array = JSON.parse(oauth2_token_json);
+             //             qb_access_token = array.access_token;
+             //             qb_refresh_token = array.refresh_token;
+             //             qb_id_token = array.id_token;
+             //             qb_expire_at = array.x_refresh_token_expires_in;
+             //
+             //             let now = new Date();
+             //             let time = now.getTime();
+             //             time += 3600 * 1000;
+             //             let expire_at = time.toString().substring(0,10);
+             //
+             //             // const updateRefreshTokenResult = await updateRefreshToken(email, qb_access_token, qb_refresh_token, expire_at);
+             //             const updateCompanyTokenResult = await updateCompanyToken(company[0].tenant_id, qb_access_token, qb_refresh_token, expire_at);
+             //             console.log(updateCompanyTokenResult);
+             //             // return res.json({
+             //             //     status:200,
+             //             //     tokenSet: array
+             //             // });
+             //             // res.send(oauth2_token_json);
+             //         })
+             //         .catch(function (e) {
+             //             console.error(e);
+             //         });
+             // }
 
             return res.json({
                 success: 1,
-                message: "Company Activated Successfully"
+                message: "Company Activated Successfully",
+                company: company[0]
             });
         } catch (e) {
             console.log(e.message);
@@ -2160,14 +2266,15 @@ module.exports = {
             message: "Suppliers synced successfully!"
         })
     },
-    syncAttachable: async  (req, res) => {
+    syncAttachable: async (req, res) => {
         try {
         // timeout(req, res, 500);
+            console.log("syncAttachable working");
         const expense_id = req.params.expense_id;
         const user_id = req.params.user_id;
         const company_id = req.params.company_id;
 
-        const record = await getCompanyByID(company_id);
+        const record = await qbgetCompanyById(company_id);
         // const record = await getActivateCompany(user_id);
         const user = await editUser(user_id);
 
@@ -2178,33 +2285,58 @@ module.exports = {
         console.log("record",record);
 
         console.log("tenant:", record[0].tenant_id, record[0].access_token);
-        //Fetch attachable of expense
-        const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , expense_id);
 
-            console.log("ATAAAA",getAttachableResult);
-        const attachableArray = JSON.parse(getAttachableResult);
-        // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
-        if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-            // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+        let purchases = await getPurchases(record[0].access_token, record[0].tenant_id, "all");
+        let purchaseArray = JSON.parse(purchases);
+        console.log("purchase",purchaseArray);
+        await storeActivity("Attachment Synced","-", "Attachment", company_id, user_id);
+        console.log("purchaseArray.IntuitResponse.QueryResponse issssss",isEmptyObject(purchaseArray.IntuitResponse.QueryResponse));
+        if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+            console.log("purchaseArray.IntuitResponse.QueryResponse is null");
         }
         else {
-            console.log("attachable is undefined");
+            for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                console.log(record[0].access_token, record[0].tenant_id , Expense.Id._text);
+                const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , Expense.Id._text);
+                const attachableArray = JSON.parse(getAttachableResult);
+                // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                    // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                    // Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                                                                                // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                    let updateAttachableResult = await updateAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, company_id, attachableArray.IntuitResponse.QueryResponse.Attachable.FileName._text, attachableArray.IntuitResponse.QueryResponse.Attachable.TempDownloadUri._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Size._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable.MetaData.CreateTime._text, new Date().toISOString());
+                    console.log("attachable updated",attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text);
+                }
+                else {
+                    console.log("attachable is undefined");
+                }
+            }
         }
 
-
-        for (const Attachable of Attachables) {
-            // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-            let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
-            if(checkAttachableResult[0].attach_count === 0) {
-                let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
-            }
-            else {
-                let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
-                console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
-            }
-        }
+        //  console.log("ATAAAA",getAttachableResult);
+        // const attachableArray = JSON.parse(getAttachableResult);
+        // // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+        // if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+        //     // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+        //     Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+        // }
+        // else {
+        //     console.log("attachable is undefined");
+        // }
+        //
+        //
+        // for (const Attachable of Attachables) {
+        //     // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+        //     let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+        //     if(checkAttachableResult[0].attach_count === 0) {
+        //         let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+        //         console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+        //     }
+        //     else {
+        //         let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+        //         console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+        //     }
+        // }
 
         return res.json({
             status: 200,
@@ -2219,5 +2351,92 @@ module.exports = {
             })
         }
 
+    },
+    quickbookDisconnect: async (req, res) => {
+        const user_id = req.params.user_id;
+        const company_id = req.params.company_id;
+
+        console.log("user_id", user_id)
+        const uu = await getCompany(user_id);
+        console.log("uu.length",uu.length);
+        const user = await getUserById(user_id);
+        const company = await qbgetCompanyById(company_id);
+
+        console.log("user", user);
+        console.log("company", company);
+        console.log("company access token", company[0].access_token);
+        let uc_length = null;
+        let uc_active_company = null;
+        await oauthClient.setToken({
+            token_type: 'Bearer',
+            access_token: company[0].access_token,
+            expires_in: company[0].expire_at,
+            refresh_token: company[0].refresh_token,
+            x_refresh_token_expires_in: company[0].expire_at,
+            realmId: company[0].tenant_id,
+            id_token: company[0].id_token
+        })
+
+        console.log("tok", oauthClient.getToken().getToken());
+
+        // if (oauthClient.isAccessTokenValid()) {
+            console.log('The access_token is valid');
+            await oauthClient.revoke({'access_token': company[0].access_token, 'refresh_token': company[0].refresh_token}).then(async (res) => {
+                console.log('Tokens revoked : ' + res);
+                await removeAccounts(company_id).then(async () => {
+                    await removeActivities(company_id).then(async () => {
+                        await removeVendors(company_id).then(async () => {
+                            await removeExpenses(company_id).then(async () => {
+                                await removeAttachables(company_id).then(async () => {
+                                    await removeDepartments(company_id).then(async () => {
+                                        await removeUserRelations(company_id).then(async () => {
+                                            await removeUsersOfCompany(company_id).then(async () => {
+                                                await removeCompany(company_id).then(async () => {
+                                                    const setForeignKeyResulten = await setForeignKeyEnable('companies');
+                                                    const setForeignKeyResulten1 = await setForeignKeyEnable('users');
+                                                    const user_companies = await getCompany(user_id);
+                                                    uc_length = user_companies.length;
+                                                    uc_active_company = user_companies[0];
+                                                    if (user_companies.length > 0) {
+                                                        console.log("user_companies", user_companies);
+                                                        const disableAllCompanyResult = await disableAllCompany(user_id);
+                                                        const activateCompanyResult = await activateCompany(user_companies[0].id);
+                                                    } else {
+                                                        console.log("change user status to 0");
+                                                        const updateUserStatusResult = await updateUserStatus(user_id, 0);
+                                                        console.log("updateUserStatus");
+                                                    }
+                                                })
+                                            })
+                                        })
+                                    })
+                                })
+                            })
+                        })
+                    })
+                });
+            }).catch((e) => {
+                console.log(e);
+                console.log(e.authResponse.response.Url);
+                console.log(e.authResponse.response.rawHeaders);
+            });
+        // }
+
+        console.log({
+            status: 200,
+            message: company[0].company_name + " has been disconnected from WePull.",
+            connection_id: company[0].connection_id,
+            companies: uc_length,
+            active_company: uc_active_company
+        });
+
+
+        return res.json({
+            status: 200,
+            message: company[0].company_name + " has been disconnected from WePull.",
+            connection_id: company[0].connection_id,
+            companies: uc_length,
+            active_company: uc_active_company
+        });
     }
 };

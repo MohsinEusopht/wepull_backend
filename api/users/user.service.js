@@ -1569,6 +1569,19 @@ module.exports = {
                 }
             );
         });
+    },
+    updateConnectionID: (company_id, connection_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE companies set connection_id = ? where id = ?`, [connection_id, company_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        });
     }
 
 };

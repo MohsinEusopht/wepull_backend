@@ -61,6 +61,7 @@ const {
     removeUsersOfCompany,
     setForeignKeyDisable,
     setForeignKeyEnable,
+    updateConnectionID
 } = require("../users/user.service");
 
 const {
@@ -1697,6 +1698,7 @@ module.exports = {
                                 //disable all active company
                                 const disableAllCompanyResult = await disableAllCompany(getUserByUserEmailResult.id);
                                 const getCompanyByTenantResultt = await getCompanyByTenant(tenantArray[0].tenantId);
+                                const updateConnectionIDResult = await updateConnectionID(getCompanyByTenantResultt[0].id, tenantArray[0].id)
                                 console.log("disable all company of", getUserByUserEmailResult.id);
                                 console.log("company data", getCompanyByTenantResultt);
                                 // console.log("active tenant",getCompanyByTenantResultt);

@@ -1769,15 +1769,20 @@ module.exports = {
             let last_name = jwtTokenDecode.family_name;
             let name = jwtTokenDecode.name;
             const checkUserEmailResult = await checkUserEmail(email);
-
+            const getUserData = await getUserByEmail(email);
+            //Create Xero user in users table
+            const token = crypto.randomBytes(48).toString('hex');
+            console.log("getUserData[0].status",getUserData);
+            if(getUserData && getUserData[0].status === 1) {
+                console.log("getUserData exist")
+                const updateLoginTokenResult = await updateXeroLoginToken(email, token, xero_id_token, xero_access_token, xero_refresh_token, xero_expire_at, 1);
+                return res.redirect(`${process.env.APP_URL}auth_login/` + encodeURIComponent(email) + `/xero/1/` + token + `/sign_in`);
+            }
 
             let company_id = null;
             let user_id;
 
             let tenantArray = JSON.parse(activeTenant);
-
-            //Create Xero user in users table
-            const token = crypto.randomBytes(48).toString('hex');
 
             // console.log("checkUserEmailResult[0].count_user",checkUserEmailResult[0].count_user);
             // this.exit();

@@ -35,7 +35,7 @@ router.get("/disconnect/:user_id/:company_id", xeroDisconnect);
 router.get("/xero_refresh_token/:email", xero_refresh_token_function);
 router.get('/xero_get_tenants',validateAdminPermission, xero_get_tenants);
 router.post("/xero_login", xero_login);
-router.get('/getAccounts/:company_id',validateAdminPermission, getAccounts);
+router.get('/getAccounts/:company_id', getAccounts);
 router.post('/createXeroAccount',validateAdminPermission, createXeroAccount);
 
 router.get('/viewAttachment/:user_id/:attach_id', viewAttachment);

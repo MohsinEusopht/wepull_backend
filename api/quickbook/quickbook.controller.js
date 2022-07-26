@@ -909,15 +909,7 @@ module.exports = {
                                 //     }
                                 // });
                                 //
-                                // let mailOptions = {
-                                //     from: 'no-reply@wepull.io',
-                                //     to: userArray.email,
-                                //     subject: 'WePull Account Creation',
-                                //     html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
-                                //         "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
-                                // };
-                                //
-                                // await transporter.sendMail(mailOptions);
+
 
 
                                 if(login_type === "connect") {
@@ -925,6 +917,27 @@ module.exports = {
                                     res.redirect(`${process.env.APP_URL}companies`);
                                 }
                                 else {
+                                    let transporter = nodemailer.createTransport({
+                                        host: "smtp.mail.yahoo.com",
+                                        port: 465,
+                                        auth: {
+                                            user: "mohsinjaved414@yahoo.com",
+                                            pass: "exvnhtussrqkmqcr"
+                                        },
+                                        debug: true, // show debug output
+                                        logger: true
+                                    });
+
+                                    let mailOptions = {
+                                        from: 'mohsinjaved414@yahoo.com',
+                                        to: userArray.email,
+                                        subject: 'WePull Account Creation',
+                                        html: "<p>We have successfully pulled all your data from quickbooks and your account is ready to be in use.</p>" +
+                                            "Login now at <a href="+ process.env.APP_URL+">" + process.env.APP_URL + "</a>"
+                                    };
+
+                                    await transporter.sendMail(mailOptions);
+
                                     console.log("Signup Working");
                                     res.redirect(`${process.env.APP_URL}auth_login/`+ encodeURIComponent(userArray.email)+`/quickbooks/0/`+ token + `/sign_up`);
                                 }

@@ -285,23 +285,39 @@ module.exports = {
                 const result = setTokenForFirstTimeLogin(body.email, token);
 
                 // let testAccount = await nodemailer.createTestAccount();
+                // let transporter = nodemailer.createTransport({
+                //     host: "smtp.mailtrap.io",
+                //     port: 2525,
+                //     auth: {
+                //         user: "21ab9120a4e35c",
+                //         pass: "8e796bfbdcea51"
+                //     },
+                //     debug: true, // show debug output
+                //     logger: true
+                // });
+
                 let transporter = nodemailer.createTransport({
-                    host: "smtp.mailtrap.io",
-                    port: 2525,
+                    host: "smtp.mail.yahoo.com",
+                    port: 465,
                     auth: {
-                        user: "21ab9120a4e35c",
-                        pass: "8e796bfbdcea51"
-                    }
+                        user: "mohsinjaved414@yahoo.com",
+                        pass: "exvnhtussrqkmqcr"
+                    },
+                    debug: true, // show debug output
+                    logger: true
                 });
 
+
                 let mailOptions = {
-                    from: 'no-reply@wepull.io',
+                    from: 'mohsinjaved414@yahoo.com',
                     to: body.email,
                     subject: 'WePull Account Setup',
                     html: "Welcome to WePull,<br/> Please setup your account detail at: <a href="+ process.env.APP_URL+"setupAccount/"+body.email+"/"+token +">" + process.env.APP_URL+"setupAccount/"+body.email+"/"+token + "</a>"
                 };
 
-                await transporter.sendMail(mailOptions, function(err, info) {
+
+
+                await transporter.sendMail(mailOptions, (err, info) => {
                     if (err) {
                         console.log("err",err)
                         return res.json({
@@ -1071,16 +1087,18 @@ module.exports = {
 
 
             let transporter = nodemailer.createTransport({
-                host: "smtp.mailtrap.io",
-                port: 2525,
+                host: "smtp.mail.yahoo.com",
+                port: 465,
                 auth: {
-                    user: "21ab9120a4e35c",
-                    pass: "8e796bfbdcea51"
-                }
+                    user: "mohsinjaved414@yahoo.com",
+                    pass: "exvnhtussrqkmqcr"
+                },
+                debug: true, // show debug output
+                logger: true
             });
 
             let mailOptions = {
-                from: 'mohjav031010@gmail.com',
+                from: 'mohsinjaved414@yahoo.com',
                 to: body.email,
                 subject: 'WePull Password Reset',
                 html: "Password reset url: <a href="+ process.env.APP_URL+"passwordReset/"+body.email+"/"+token +">" + process.env.APP_URL+"passwordReset/"+body.email+"/"+token + "</a>"

@@ -530,6 +530,9 @@ module.exports = {
                         }
                     } else if (login_type === "sign_in") {
                         if (tenantArray.length > 0) {
+                            if(getuser.length === 0) {
+                                return res.redirect(`${process.env.APP_URL}login/error/404`);
+                            }
                             if (getuser[0].status === 1) {
                                 // for (const tenant of tenantArray) {
                                 const checkUserCompanyResultt = await checkUserCompanyByTenant(tenantArray[0].tenantId);

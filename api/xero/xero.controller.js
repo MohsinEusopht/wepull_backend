@@ -2213,13 +2213,13 @@ module.exports = {
                     debug: true, // show debug output
                     logger: true
                 });
-
+                let href = process.env.APP_URL+"login";
+                let html = "<html><head></head><body style='background-color: #eaeaea;padding-top: 30px;padding-bottom: 30px'><div style='width: 50%;margin-left:auto;margin-right:auto;margin-top: 30px;margin-bottom: 30px;margin-top:20px;border-radius: 5px;background-color: white;height: 100%;padding-bottom: 30px;overflow: hidden'><div style='background-color: white;padding-top: 20px;padding-bottom: 20px;width: 100%;text-align: center'><img src='https://wepull.netlify.app/finalLogo.png' width='100px' style='margin: auto'/></div><hr/><p style='padding-left: 10px;padding-right: 10px'>Hi "+getUserData[0].first_name+",<br/><br/>We have successfully pulled all your data from your xero organization, and your account is ready to be in use.<br/><br/><a href='"+href+"' style='text-decoration: none;width: 100%'><button style='border-radius: 5px;background-color: #1a2956;color:white;border: none;margin-left: auto;margin-right: auto;padding:10px;cursor: pointer'>Login Now</button></a><br/><br/>Our team is always here to help. If you have any questions or need further assistance, chat to one of our representatives using live-chat assist on the website or send us an email at support@wepull.io</p></div></body></html>"
                 let mailOptions = {
                     from: 'mohsinjaved414@yahoo.com',
                     to: email,
                     subject: 'WePull Account Creation',
-                    html: "<p>We have successfully pulled all your data from xero and your account is ready to be in use.</p>" +
-                        "Login now at <a href=" + process.env.APP_URL + ">" + process.env.APP_URL + "</a>"
+                    html: html
                 };
                 await transporter.sendMail(mailOptions);
 
@@ -3164,7 +3164,7 @@ module.exports = {
             await setAllDepartStatusToZero(company_id);
             const response = await xero.accountingApi.getTrackingCategories(record[0].tenant_id, null, order, includeArchived);
             // console.log("result:::",response.body.trackingCategories[0].options)
-
+            // console.log("response.body.trackingCategories.length",response.body.trackingCategories.length);
             if (response.body.trackingCategories.length > 0) {
 
                 for (let i = 0; i < response.body.trackingCategories.length; i++) {

@@ -2106,7 +2106,18 @@ module.exports = {
                                     let is_paid = "false";
                                     let payment_ref_number = null;
                                     let paid_amount = null;
-                                    let payment_date = null;
+                                    let payment_date = null
+                                    let category,location = null;
+                                    for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
+                                        else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
+                                    }
                                     if (Expense.payments.length > 0) {
                                         is_paid = "true";
                                         payment_ref_number = Expense.payments[0].reference;
@@ -2118,13 +2129,13 @@ module.exports = {
                                         console.log("paid_amount", paid_amount);
                                         console.log("payment_date", payment_date);
                                     }
-                                    if (Expense.lineItems[0].tracking.length > 0) {
-                                        gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
-                                        console.log("GETED DEPART", gdpart);
-                                        console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
-                                    }
+                                    // if (Expense.lineItems[0].tracking.length > 0) {
+                                    //     gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                                    //     console.log("GETED DEPART", gdpart);
+                                    //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                    // }
                                     let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 } else {
                                     for (let i = 0; i < Expense.lineItems.length; i++) {
                                         let j = +i + +1;
@@ -2135,6 +2146,17 @@ module.exports = {
                                         let payment_ref_number = null;
                                         let paid_amount = null;
                                         let payment_date = null;
+                                        let category,location = null;
+                                        for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
+                                            else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
+                                        }
                                         if (Expense.payments.length > 0) {
                                             is_paid = "true";
                                             payment_ref_number = Expense.payments[0].reference;
@@ -2146,13 +2168,13 @@ module.exports = {
                                             console.log("paid_amount", paid_amount);
                                             console.log("payment_date", payment_date);
                                         }
-                                        if (Expense.lineItems[i].tracking.length > 0) {
-                                            gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
-                                            console.log("GETED DEPART", gdpart);
-                                            console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
-                                        }
+                                        // if (Expense.lineItems[i].tracking.length > 0) {
+                                        //     gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
+                                        //     console.log("GETED DEPART", gdpart);
+                                        //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                        // }
                                         let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                        const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                        const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                     }
                                 }
                             }
@@ -2777,7 +2799,7 @@ module.exports = {
                                     console.log("payment_date", payment_date);
                                 }
                                 console.log("Line item ", i);
-                                console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
+                                // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
                                 // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                 let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
                                 const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
@@ -3011,6 +3033,17 @@ module.exports = {
                                 let payment_ref_number = null;
                                 let paid_amount = null;
                                 let payment_date = null;
+                                let category,location = null;
+                                for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
+                                        // category = Expense.lineItems[0].tracking[x].option;
+                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
+                                    else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
+                                        // location = Expense.lineItems[0].tracking[x].option;
+                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
+                                }
                                 if (Expense.payments.length > 0) {
                                     is_paid = "true";
                                     payment_ref_number = Expense.payments[0].reference;
@@ -3022,14 +3055,14 @@ module.exports = {
                                     console.log("paid_amount", paid_amount);
                                     console.log("payment_date", payment_date);
                                 }
-                                if (Expense.lineItems[0].tracking.length > 0) {
-                                    gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
-                                    console.log("GETED DEPART", gdpart);
-                                    console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
-                                }
+                                // if (Expense.lineItems[0].tracking.length > 0) {
+                                //     gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                                //     console.log("GETED DEPART", gdpart);
+                                //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                // }
 
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
                                     let j = +i + +1;
@@ -3040,6 +3073,17 @@ module.exports = {
                                     let payment_ref_number = null;
                                     let paid_amount = null;
                                     let payment_date = null;
+                                    let category,location = null;
+                                    for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
+                                        else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
+                                    }
                                     if (Expense.payments.length > 0) {
                                         is_paid = "true";
                                         payment_ref_number = Expense.payments[0].reference;
@@ -3051,13 +3095,13 @@ module.exports = {
                                         console.log("paid_amount", paid_amount);
                                         console.log("payment_date", payment_date);
                                     }
-                                    if (Expense.lineItems[i].tracking.length > 0) {
-                                        gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
-                                        console.log("GETED DEPART", gdpart);
-                                        console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
-                                    }
+                                    // if (Expense.lineItems[i].tracking.length > 0) {
+                                    //     gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
+                                    //     console.log("GETED DEPART", gdpart);
+                                    //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                    // }
                                     let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 }
                             }
                         } else {
@@ -3072,12 +3116,23 @@ module.exports = {
                                 let payment_ref_number = null;
                                 let paid_amount = null;
                                 let payment_date = null;
-                                if (Expense.lineItems[0].tracking.length > 0) {
-                                    console.log("Expense.lineItems[0].tracking[0]", Expense.lineItems[0].tracking[0]);
-                                    gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
-                                    console.log("GETED DEPART", gdpart);
-                                    console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                let category,location = null;
+                                for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
+                                        // category = Expense.lineItems[0].tracking[x].option;
+                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
+                                    else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
+                                        // location = Expense.lineItems[0].tracking[x].option;
+                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
                                 }
+                                // if (Expense.lineItems[0].tracking.length > 0) {
+                                //     console.log("Expense.lineItems[0].tracking[0]", Expense.lineItems[0].tracking[0]);
+                                //     gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                                //     console.log("GETED DEPART", gdpart);
+                                //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                // }
                                 if (Expense.payments.length > 0) {
                                     is_paid = "true";
                                     payment_ref_number = Expense.payments[0].reference;
@@ -3093,7 +3148,7 @@ module.exports = {
                                 // console.log(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null,vn[0].vendor_id!==undefined?vn[0].vendor_id:null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[i].accountCode,null,Expense.lineItems[i].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date,company_id, user_id);
                                 // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 // console.log()
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
@@ -3105,12 +3160,23 @@ module.exports = {
                                     let payment_ref_number = null;
                                     let paid_amount = null;
                                     let payment_date = null;
-                                    if (Expense.lineItems[i].tracking.length > 0) {
-                                        console.log("Expense.lineItems[0].tracking[0]", Expense.lineItems[0].tracking[0]);
-                                        gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
-                                        console.log("GETED DEPART", gdpart);
-                                        console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                    let category,location = null;
+                                    for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
+                                        else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
                                     }
+                                    // if (Expense.lineItems[i].tracking.length > 0) {
+                                    //     console.log("Expense.lineItems[0].tracking[0]", Expense.lineItems[0].tracking[0]);
+                                    //     gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
+                                    //     console.log("GETED DEPART", gdpart);
+                                    //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                    // }
                                     if (Expense.payments.length > 0) {
                                         is_paid = "true";
                                         payment_ref_number = Expense.payments[0].reference;
@@ -3123,10 +3189,10 @@ module.exports = {
                                         console.log("payment_date", payment_date);
                                     }
                                     console.log("Line item ", i);
-                                    console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
+                                    // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
                                     // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                     let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                     // console.log()
                                 }
                             }

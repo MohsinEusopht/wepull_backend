@@ -727,40 +727,27 @@ module.exports = {
                                 }
                                 else {
                                     if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                        for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                                            if (Department.SubDepartment._text.toString() === "true") {
-                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
-                                            } else {
-                                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
-                                                console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                        if(departmentArray.IntuitResponse.QueryResponse.Department.length > 1) {
+                                            for (const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                                if (Department.SubDepartment._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                                } else {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                                }
                                             }
                                         }
-                                        if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                            for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                                // const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
-                                                // if(checkTenantDepartmentResult[0].depart_count === 0) {
-                                                if(Class.SubClass._text.toString() === "true") {
-                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
+                                        else {
+                                            let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                                                if (Department.SubDepartment._text.toString() === "true") {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
+                                                } else {
+                                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
+                                                    console.log("New Department created, ", Department.Id._text, Department.Name._text, null, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
                                                 }
-                                                else {
-                                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, getCompanyByTenantResult[0].id,getUserByUserEmailResult.id);
-                                                }
-                                                // }
-                                                // else {
-                                                //     console.log("Found:", Class.Id._text)
-                                                //     if(Class.SubClass._text.toString() === "true") {
-                                                //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                //         console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
-                                                //     }
-                                                //     else {
-                                                //         const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                //         console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
-                                                //     }
-                                                // }
-                                            }
+
                                         }
                                     }
                                 }
@@ -770,9 +757,9 @@ module.exports = {
                                 }
                                 else {
                                     if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
-                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
-                                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                        if(classArray.IntuitResponse.QueryResponse.Class.length > 1) {
+                                            for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                                const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
                                                 if(Class.SubClass._text.toString() === "true") {
                                                     const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
                                                     console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
@@ -782,16 +769,17 @@ module.exports = {
                                                     console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
                                                 }
                                             }
+                                        }
+                                        else {
+                                            let Class = classArray.IntuitResponse.QueryResponse.Class[0];
+                                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
+                                            if(Class.SubClass._text.toString() === "true") {
+                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                            }
                                             else {
-                                                console.log("Found:", Class.Id._text)
-                                                if(Class.SubClass._text.toString() === "true") {
-                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
-                                                else {
-                                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
-                                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
-                                                }
+                                                const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
                                             }
                                         }
                                     }
@@ -1159,7 +1147,34 @@ module.exports = {
                                     }
                                     else {
                                         if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                                            for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                            if(departmentArray.IntuitResponse.QueryResponse.Department.length > 1) {
+                                                for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                                                    const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
+                                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                        if(Department.SubDepartment._text.toString() === "true") {
+                                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                        }
+                                                        else {
+                                                            const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                        }
+                                                    }
+                                                    else {
+                                                        console.log("Found:", Department.Id._text)
+                                                        if(Department.SubDepartment._text.toString() === "true") {
+                                                            const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                        }
+                                                        else {
+                                                            const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, createCompanyResult.insertId, getUserByUserEmailResult.id);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else {
+                                                let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
                                                 const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
                                                 if(checkTenantDepartmentResult[0].depart_count === 0) {
                                                     if(Department.SubDepartment._text.toString() === "true") {
@@ -1184,14 +1199,41 @@ module.exports = {
                                                 }
                                             }
                                         }
-
                                     }
+
                                     if(isEmptyObject(classArray.IntuitResponse.QueryResponse)) {
                                         console.log("purchaseArray.IntuitResponse.QueryResponse is null");
                                     }
                                     else {
                                         if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
-                                            for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                            if(classArray.IntuitResponse.QueryResponse.Class.length > 1) {
+                                                for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                                                    const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
+                                                    if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                                        if(Class.SubClass._text.toString() === "true") {
+                                                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                        }
+                                                        else {
+                                                            const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                        }
+                                                    }
+                                                    else {
+                                                        console.log("Found:", Class.Id._text)
+                                                        if(Class.SubClass._text.toString() === "true") {
+                                                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                        }
+                                                        else {
+                                                            const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                                            console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else {
+                                                let Class = classArray.IntuitResponse.QueryResponse.Class[0];
                                                 const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
                                                 if(checkTenantDepartmentResult[0].depart_count === 0) {
                                                     if(Class.SubClass._text.toString() === "true") {
@@ -1778,7 +1820,34 @@ module.exports = {
             }
             else {
                 if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                    if(departmentArray.IntuitResponse.QueryResponse.Department.length > 1) {
+                        for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                            const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
+                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                            else {
+                                console.log("Found:", Department.Id._text)
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
                         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {
                             if(Department.SubDepartment._text.toString() === "true") {
@@ -1812,7 +1881,35 @@ module.exports = {
             else {
                 if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
                     console.log("Class is not undefined");
-                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                    if(classArray.IntuitResponse.QueryResponse.Class.length > 1) {
+                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                            console.log("Class id",Class.Id._text);
+                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                if(Class.SubClass._text.toString() === "true") {
+                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                            else {
+                                console.log("Found:", Class.Id._text)
+                                if(Class.SubClass._text.toString() === "true") {
+                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        let Class = classArray.IntuitResponse.QueryResponse.Class[0];
                         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
                         console.log("Class id",Class.Id._text);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {
@@ -2141,35 +2238,65 @@ module.exports = {
             await storeActivity("Categories Synced","-", "Category", company_id, user_id);
 
             console.log("departments",departmentArray);
-            console.log("classes", classArray.IntuitResponse.QueryResponse.Class);
+            console.log("classes", classArray);
+            console.log("departments len", departmentArray.IntuitResponse.QueryResponse.Department.length);
+            console.log("classes len", classArray.IntuitResponse.QueryResponse.Class.length);
             if(isEmptyObject(departmentArray.IntuitResponse.QueryResponse)) {
                 console.log("purchaseArray.IntuitResponse.QueryResponse is null");
             }
             else {
                 if(departmentArray.IntuitResponse.QueryResponse.Department!=undefined) {
-                    for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
-                        const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
-                        if(checkTenantDepartmentResult[0].depart_count === 0) {
-                            if(Department.SubDepartment._text.toString() === "true") {
-                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                    if(departmentArray.IntuitResponse.QueryResponse.Department.length > 1) {
+                        for(const Department of departmentArray.IntuitResponse.QueryResponse.Department) {
+                            const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
+                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
                             }
                             else {
-                                const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                console.log("Found:", Department.Id._text)
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
                             }
                         }
-                        else {
-                            console.log("Found:", Department.Id._text)
-                            if(Department.SubDepartment._text.toString() === "true") {
-                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                    }
+                    else {
+                        let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                            const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
+                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart created, ",Department.Id._text, Department.Name._text, Department.ParentRef.value,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, 0, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department created, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
                             }
                             else {
-                                const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
-                                console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                console.log("Found:", Department.Id._text)
+                                if(Department.SubDepartment._text.toString() === "true") {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department with sub depart updated, ",Department.Id._text, Department.Name._text, Department.ParentRef._text,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const updateDepartmentResult = await updateDepartment(Department.Id._text, Department.Name._text, null, Department.Active._text==="true"?1:0, company_id,user_id, Department.MetaData.CreateTime._text,Department.MetaData.LastUpdatedTime._text);
+                                    console.log("New Department updated, ",Department.Id._text, Department.Name._text, null,Department.Active._text==="true"?1:0, company_id,user_id);
+                                }
                             }
-                        }
+
                     }
                 }
             }
@@ -2181,7 +2308,35 @@ module.exports = {
             else {
                 if(classArray.IntuitResponse.QueryResponse.Class!=undefined) {
                     console.log("Class is not undefined");
-                    for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                    if(classArray.IntuitResponse.QueryResponse.Class.length > 1) {
+                        for(const Class of classArray.IntuitResponse.QueryResponse.Class) {
+                            const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
+                            console.log("Class id",Class.Id._text);
+                            if(checkTenantDepartmentResult[0].depart_count === 0) {
+                                if(Class.SubClass._text.toString() === "true") {
+                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class with sub class created, ",Class.Id._text, Class.Name._text, Class.ParentRef.value,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class created, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                            else {
+                                console.log("Found:", Class.Id._text)
+                                if(Class.SubClass._text.toString() === "true") {
+                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class with sub Class updated, ",Class.Id._text, Class.Name._text, Class.ParentRef._text,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                                else {
+                                    const updateDepartmentResult = await updateDepartment(Class.Id._text, Class.Name._text, null, Class.Active._text==="true"?1:0, company_id,user_id, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
+                                    console.log("New Class updated, ",Class.Id._text, Class.Name._text, null,Class.Active._text==="true"?1:0, company_id,user_id);
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        let Class = classArray.IntuitResponse.QueryResponse.Class[0];
                         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
                         console.log("Class id",Class.Id._text);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {

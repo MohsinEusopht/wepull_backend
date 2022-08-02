@@ -2110,10 +2110,10 @@ module.exports = {
                                     let category,location = null;
                                     if (Expense.lineItems[0].tracking.length > 0) {
                                         for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                            if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
                                                 // category = Expense.lineItems[0].tracking[x].option;
                                                 category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                            } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                            } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
                                                 // location = Expense.lineItems[0].tracking[x].option;
                                                 location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
                                             }
@@ -2150,10 +2150,10 @@ module.exports = {
                                         let category,location = null;
                                         if (Expense.lineItems[0].tracking.length > 0) {
                                             for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                                if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                                if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
                                                     // category = Expense.lineItems[0].tracking[x].option;
                                                     category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                                } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                                } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
                                                     // location = Expense.lineItems[0].tracking[x].option;
                                                     location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
                                                 }
@@ -2649,10 +2649,10 @@ module.exports = {
                             let category,location = null;
                             if (Expense.lineItems[0].tracking.length > 0) {
                                 for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
                                         // category = Expense.lineItems[0].tracking[x].option;
                                         category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
                                         // location = Expense.lineItems[0].tracking[x].option;
                                         location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
                                     }
@@ -2691,10 +2691,10 @@ module.exports = {
                                 let category,location = null;
                                 if (Expense.lineItems[i].tracking.length > 0) {
                                     for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
-                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
                                             // category = Expense.lineItems[0].tracking[x].option;
                                             category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
                                             // location = Expense.lineItems[0].tracking[x].option;
                                             location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
                                         }
@@ -2735,10 +2735,10 @@ module.exports = {
                             let category,location = null;
                             if (Expense.lineItems[0].tracking.length > 0) {
                                 for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
                                         // category = Expense.lineItems[0].tracking[x].option;
                                         category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
                                         // location = Expense.lineItems[0].tracking[x].option;
                                         location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
                                     }
@@ -2779,10 +2779,10 @@ module.exports = {
                                 let category,location = null;
                                 if (Expense.lineItems[i].tracking.length > 0) {
                                     for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
-                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
                                             // category = Expense.lineItems[0].tracking[x].option;
                                             category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
                                             // location = Expense.lineItems[0].tracking[x].option;
                                             location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
                                         }
@@ -3042,10 +3042,10 @@ module.exports = {
                                 let category,location = null;
                                 if (Expense.lineItems[0].tracking.length > 0) {
                                     for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
                                             // category = Expense.lineItems[0].tracking[x].option;
                                             category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
                                             // location = Expense.lineItems[0].tracking[x].option;
                                             location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
                                         }
@@ -3083,10 +3083,10 @@ module.exports = {
                                     let category,location = null;
                                     if (Expense.lineItems[i].tracking.length > 0) {
                                         for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
-                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
                                                 // category = Expense.lineItems[0].tracking[x].option;
                                                 category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
                                                 // location = Expense.lineItems[0].tracking[x].option;
                                                 location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
                                             }
@@ -3127,10 +3127,10 @@ module.exports = {
                                 let category,location = null;
                                 if (Expense.lineItems[0].tracking.length > 0) {
                                     for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
-                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
                                             // category = Expense.lineItems[0].tracking[x].option;
                                             category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
                                             // location = Expense.lineItems[0].tracking[x].option;
                                             location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
                                         }
@@ -3172,10 +3172,11 @@ module.exports = {
                                     let category,location = null;
                                     if (Expense.lineItems[i].tracking.length > 0) {
                                         for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
-                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
                                                 // category = Expense.lineItems[0].tracking[x].option;
                                                 category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
                                                 // location = Expense.lineItems[0].tracking[x].option;
                                                 location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
                                             }

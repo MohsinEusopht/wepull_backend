@@ -739,7 +739,7 @@ module.exports = {
                                             }
                                         }
                                         else {
-                                            let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                                            let Department = departmentArray.IntuitResponse.QueryResponse.Department;
                                                 if (Department.SubDepartment._text.toString() === "true") {
                                                     const addDepartmentResult = await addDepartment(Department.Id._text, Department.Name._text, Department.ParentRef._text, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id, Department.MetaData.CreateTime._text, Department.MetaData.LastUpdatedTime._text);
                                                     console.log("New Department with sub depart created, ", Department.Id._text, Department.Name._text, Department.ParentRef.value, Department.Active._text === "true" ? 1 : 0, getCompanyByTenantResult[0].id, getUserByUserEmailResult.id);
@@ -771,7 +771,7 @@ module.exports = {
                                             }
                                         }
                                         else {
-                                            let Class = classArray.IntuitResponse.QueryResponse.Class[0];
+                                            let Class = classArray.IntuitResponse.QueryResponse.Class;
                                             const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
                                             if(Class.SubClass._text.toString() === "true") {
                                                 const addDepartmentResult = await addDepartment(Class.Id._text, Class.Name._text, Class.ParentRef._text, Class.Active._text==="true"?1:0, createCompanyResult.insertId,getUserByUserEmailResult.id, 1, Class.MetaData.CreateTime._text,Class.MetaData.LastUpdatedTime._text);
@@ -1174,7 +1174,7 @@ module.exports = {
                                                 }
                                             }
                                             else {
-                                                let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                                                let Department = departmentArray.IntuitResponse.QueryResponse.Department;
                                                 const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,createCompanyResult.insertId);
                                                 if(checkTenantDepartmentResult[0].depart_count === 0) {
                                                     if(Department.SubDepartment._text.toString() === "true") {
@@ -1233,7 +1233,7 @@ module.exports = {
                                                 }
                                             }
                                             else {
-                                                let Class = classArray.IntuitResponse.QueryResponse.Class[0];
+                                                let Class = classArray.IntuitResponse.QueryResponse.Class;
                                                 const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,createCompanyResult.insertId);
                                                 if(checkTenantDepartmentResult[0].depart_count === 0) {
                                                     if(Class.SubClass._text.toString() === "true") {
@@ -1847,7 +1847,7 @@ module.exports = {
                         }
                     }
                     else {
-                        let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                        let Department = departmentArray.IntuitResponse.QueryResponse.Department;
                         const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {
                             if(Department.SubDepartment._text.toString() === "true") {
@@ -1909,7 +1909,7 @@ module.exports = {
                         }
                     }
                     else {
-                        let Class = classArray.IntuitResponse.QueryResponse.Class[0];
+                        let Class = classArray.IntuitResponse.QueryResponse.Class;
                         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
                         console.log("Class id",Class.Id._text);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {
@@ -2273,7 +2273,7 @@ module.exports = {
                         }
                     }
                     else {
-                        let Department = departmentArray.IntuitResponse.QueryResponse.Department[0];
+                        let Department = departmentArray.IntuitResponse.QueryResponse.Department;
                             const checkTenantDepartmentResult = await checkTenantDepartment(Department.Id._text,company_id);
                             if(checkTenantDepartmentResult[0].depart_count === 0) {
                                 if(Department.SubDepartment._text.toString() === "true") {
@@ -2336,7 +2336,7 @@ module.exports = {
                         }
                     }
                     else {
-                        let Class = classArray.IntuitResponse.QueryResponse.Class[0];
+                        let Class = classArray.IntuitResponse.QueryResponse.Class;
                         const checkTenantDepartmentResult = await checkTenantDepartment(Class.Id._text,company_id);
                         console.log("Class id",Class.Id._text);
                         if(checkTenantDepartmentResult[0].depart_count === 0) {

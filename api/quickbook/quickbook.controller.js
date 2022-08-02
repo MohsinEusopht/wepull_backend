@@ -934,7 +934,7 @@ module.exports = {
                                     let mailOptions = {
                                         from: 'mohsinjaved414@yahoo.com',
                                         to: userArray.email,
-                                        subject: 'WePull Account Creation',
+                                        subject: 'Data Pull Complete',
                                         html: html
                                     };
 

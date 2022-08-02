@@ -48,10 +48,10 @@ module.exports = {
             );
         })
     },
-    addXeroExpense:(expense_id,line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
+    addXeroExpense:(expense_id,line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, location_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `INSERT INTO expenses(expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id],
+                `INSERT INTO expenses(expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, location_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id, company_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'xero')`, [expense_id, line_item, created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, location_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);
@@ -62,10 +62,10 @@ module.exports = {
             );
         })
     },
-    updateXeroExpense:(expense_id,line_item , created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
+    updateXeroExpense:(expense_id,line_item , created_at, updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, location_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_number = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, total_amount = ?, is_paid = ?, payment_ref_number = ?, paid_amount = ?, payment_date = ?  WHERE expense_id = ? and line_item = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, expense_id, line_item],
+                `UPDATE expenses SET updated_at = ?, txn_date = ?, entity_ref_number = ?, entity_ref_name = ?, currency = ?, payment_type = ?, account_number = ?, credit = ?, description = ?, department_id = ?, location_id = ?, total_amount = ?, is_paid = ?, payment_ref_number = ?, paid_amount = ?, payment_date = ?  WHERE expense_id = ? and line_item = ? and company_type = 'xero'`, [updated_at, txn_date, entity_ref_number, entity_ref_name, currency, payment_type, account_number, credit, description, department_id, location_id, total_amount, is_paid, payment_ref_number, paid_amount, payment_date, expense_id, line_item],
                 (error, results, fields) => {
                     if (error) {
                         console.log(error);

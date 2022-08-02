@@ -2108,14 +2108,15 @@ module.exports = {
                                     let paid_amount = null;
                                     let payment_date = null
                                     let category,location = null;
-                                    for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
-                                            // category = Expense.lineItems[0].tracking[x].option;
-                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                        }
-                                        else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
-                                            // location = Expense.lineItems[0].tracking[x].option;
-                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    if (Expense.lineItems[0].tracking.length > 0) {
+                                        for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                            if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                            }
                                         }
                                     }
                                     if (Expense.payments.length > 0) {
@@ -2147,14 +2148,15 @@ module.exports = {
                                         let paid_amount = null;
                                         let payment_date = null;
                                         let category,location = null;
-                                        for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
-                                                // category = Expense.lineItems[0].tracking[x].option;
-                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                            }
-                                            else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
-                                                // location = Expense.lineItems[0].tracking[x].option;
-                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        if (Expense.lineItems[0].tracking.length > 0) {
+                                            for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                                if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                                    // category = Expense.lineItems[0].tracking[x].option;
+                                                    category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                                } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                                    // location = Expense.lineItems[0].tracking[x].option;
+                                                    location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                                }
                                             }
                                         }
                                         if (Expense.payments.length > 0) {
@@ -2645,14 +2647,15 @@ module.exports = {
                             let payment_date = null;
 
                             let category,location = null;
-                            for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
-                                    // category = Expense.lineItems[0].tracking[x].option;
-                                    category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                }
-                                else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
-                                    // location = Expense.lineItems[0].tracking[x].option;
-                                    location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                            if (Expense.lineItems[0].tracking.length > 0) {
+                                for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        // category = Expense.lineItems[0].tracking[x].option;
+                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                        // location = Expense.lineItems[0].tracking[x].option;
+                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
                                 }
                             }
                             console.log("category is", category);
@@ -2686,14 +2689,15 @@ module.exports = {
                                 let paid_amount = null;
                                 let payment_date = null;
                                 let category,location = null;
-                                for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
-                                    if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
-                                        // category = Expense.lineItems[0].tracking[x].option;
-                                        category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                    }
-                                    else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
-                                        // location = Expense.lineItems[0].tracking[x].option;
-                                        location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                if (Expense.lineItems[i].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
                                     }
                                 }
                                 if (Expense.payments.length > 0) {
@@ -2729,14 +2733,15 @@ module.exports = {
                             let paid_amount = null;
                             let payment_date = null;
                             let category,location = null;
-                            for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
-                                    // category = Expense.lineItems[0].tracking[x].option;
-                                    category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                }
-                                else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
-                                    // location = Expense.lineItems[0].tracking[x].option;
-                                    location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                            if (Expense.lineItems[0].tracking.length > 0) {
+                                for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                        // category = Expense.lineItems[0].tracking[x].option;
+                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                        // location = Expense.lineItems[0].tracking[x].option;
+                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                    }
                                 }
                             }
                             // if (Expense.lineItems[0].tracking.length > 0) {
@@ -2772,14 +2777,15 @@ module.exports = {
                                 let paid_amount = null;
                                 let payment_date = null;
                                 let category,location = null;
-                                for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
-                                    if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
-                                        // category = Expense.lineItems[0].tracking[x].option;
-                                        category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                    }
-                                    else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
-                                        // location = Expense.lineItems[0].tracking[x].option;
-                                        location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                if (Expense.lineItems[i].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                        }
                                     }
                                 }
                                 // if (Expense.lineItems[i].tracking.length > 0) {
@@ -3034,14 +3040,15 @@ module.exports = {
                                 let paid_amount = null;
                                 let payment_date = null;
                                 let category,location = null;
-                                for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
-                                        // category = Expense.lineItems[0].tracking[x].option;
-                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                    }
-                                    else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
-                                        // location = Expense.lineItems[0].tracking[x].option;
-                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                if (Expense.lineItems[0].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
                                     }
                                 }
                                 if (Expense.payments.length > 0) {
@@ -3074,14 +3081,15 @@ module.exports = {
                                     let paid_amount = null;
                                     let payment_date = null;
                                     let category,location = null;
-                                    for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
-                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
-                                            // category = Expense.lineItems[0].tracking[x].option;
-                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                        }
-                                        else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
-                                            // location = Expense.lineItems[0].tracking[x].option;
-                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                    if (Expense.lineItems[i].tracking.length > 0) {
+                                        for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
                                         }
                                     }
                                     if (Expense.payments.length > 0) {
@@ -3117,14 +3125,15 @@ module.exports = {
                                 let paid_amount = null;
                                 let payment_date = null;
                                 let category,location = null;
-                                for (let x=0;x<Expense.lineItems[0].tracking.length;x++){
-                                    if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="categories") {
-                                        // category = Expense.lineItems[0].tracking[x].option;
-                                        category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
-                                    }
-                                    else if(Expense.lineItems[0].tracking[x].name.toString().toLowerCase()==="location") {
-                                        // location = Expense.lineItems[0].tracking[x].option;
-                                        location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                if (Expense.lineItems[0].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "categories") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "location") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
                                     }
                                 }
                                 // if (Expense.lineItems[0].tracking.length > 0) {
@@ -3161,14 +3170,15 @@ module.exports = {
                                     let paid_amount = null;
                                     let payment_date = null;
                                     let category,location = null;
-                                    for (let x=0;x<Expense.lineItems[i].tracking.length;x++){
-                                        if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="categories") {
-                                            // category = Expense.lineItems[0].tracking[x].option;
-                                            category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
-                                        }
-                                        else if(Expense.lineItems[i].tracking[x].name.toString().toLowerCase()==="location") {
-                                            // location = Expense.lineItems[0].tracking[x].option;
-                                            location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                    if (Expense.lineItems[i].tracking.length > 0) {
+                                        for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "categories") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "location") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
                                         }
                                     }
                                     // if (Expense.lineItems[i].tracking.length > 0) {

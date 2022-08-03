@@ -908,11 +908,11 @@ module.exports = {
     },
     getXeroExpenses: (company_id) => {
         return new Promise((resolov, reject) => {
-            let q=`SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ${company_id} JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.location_id and d.company_id=e.company_id WHERE e.company_id = ${company_id}`;
+            let q=`SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ${company_id} JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.location_id and d.company_id=e.company_id WHERE e.company_id = ${company_id}`;
             console.log("qqqqq",q);
             pool.query(
-                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.location_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
-                // `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code join companies c ON e.company_id = c.id where e.company_id = ?`, [company_id],
+                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id LEFT JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.location_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
+                // `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.code join companies c ON e.company_id = c.id where e.company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -925,8 +925,8 @@ module.exports = {
     getXeroExpensesForUser: (company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'class' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
-                // `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code join companies c ON e.company_id = c.id where e.company_id = ?`, [company_id],
+                `SELECT DISTINCT(e.expense_id),e.created_at,e.updated_at,e.txn_date,e.description,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'class' from expenses e left join accounts a on e.account_number=a.code AND a.company_id = ? JOIN companies c on c.id=e.company_id JOIN departments d ON d.depart_id=e.department_id and d.company_id=e.company_id LEFT JOIN departments cl ON cl.depart_id=e.class_id and d.company_id=e.company_id WHERE e.company_id = ?`, [company_id, company_id],
+                // `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.code join companies c ON e.company_id = c.id where e.company_id = ?`, [company_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -950,11 +950,11 @@ module.exports = {
         })
     },
     getQuickbooksExpenseByAccount: (account_id, company_id) => {
-        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
         // console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.account_number = ? ORDER BY e.created_at ASC`, [company_id, account_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.account_number = ? ORDER BY e.created_at ASC`, [company_id, account_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -965,11 +965,11 @@ module.exports = {
         })
     },
     getQuickbookExpenseByCategory: (company_id, category_id) => {
-        let q= `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ${company_id} and e.department_id = ${category_id} ORDER BY e.created_at ASC`;
+        let q= `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ${company_id} and e.department_id = ${category_id} ORDER BY e.created_at ASC`;
         console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? ORDER BY e.created_at ASC`, [company_id, category_id],
+                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? ORDER BY e.created_at ASC`, [company_id, category_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -980,11 +980,11 @@ module.exports = {
         })
     },
     getQuickbookExpenseByCategoryAndVendor: (company_id, category_id, vendor_id) => {
-        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
         // console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
+                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -995,11 +995,11 @@ module.exports = {
         })
     },
     getQuickbookExpenseByCategoryAndVendorForUser: (company_id, category_id, vendor_id) => {
-        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
         // console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
+                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1010,11 +1010,11 @@ module.exports = {
         })
     },
     getQuickbookExpenseByVendor: (company_id, vendor_id) => {
-        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
         // console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
+                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1025,11 +1025,11 @@ module.exports = {
         })
     },
     getQuickbookExpenseByVendorForUser: (company_id, vendor_id) => {
-        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
+        // let q= `SELECT e.expense_id,e.created_at,e.txn_date,e.currency,e.payment_type,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.accountID join companies c ON e.company_id = c.id where e.company_id = ${company_id} and e.account_number = ${account_id}`;
         // console.log("query",q);
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
+                `SELECT e.expense_id,e.txn_date as 'created_at',e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.accountID and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1042,7 +1042,7 @@ module.exports = {
     getXeroExpenseByAccount: (account_id ,company_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,c.company_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.account_number = ? ORDER BY e.created_at ASC`, [company_id, account_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,c.company_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id where e.company_id = ? and e.account_number = ? ORDER BY e.created_at ASC`, [company_id, account_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1054,9 +1054,9 @@ module.exports = {
     },
     getXeroExpenseByCategory: (company_id, category_id) => {
         return new Promise((resolov, reject) => {
-            // console.log("ccc",`SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ${company_id} and e.department_id = ${category_id} or e.company_id = ${company_id} and e.location_id = ${category_id} ORDER BY e.created_at ASC`)
+            // console.log("ccc",`SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ${company_id} and e.department_id = ${category_id} or e.company_id = ${company_id} and e.location_id = ${category_id} ORDER BY e.created_at ASC`)
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ? and e.department_id = ? or e.company_id = ? and e.location_id = ? ORDER BY e.created_at ASC`, [company_id, category_id, company_id, category_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ? and e.department_id = ? or e.company_id = ? and e.location_id = ? ORDER BY e.created_at ASC`, [company_id, category_id, company_id, category_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1069,7 +1069,7 @@ module.exports = {
     getXeroExpenseByCategoryAndVendor: (company_id, category_id, vendor_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1082,7 +1082,7 @@ module.exports = {
     getXeroExpenseByCategoryAndVendorForUser: (company_id, category_id, vendor_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? or e.company_id = ? and e.location_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id, company_id, category_id, vendor_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name,cl.depart_name as 'location' from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id LEFT JOIN departments cl ON cl.depart_id = e.location_id where e.company_id = ? and e.department_id = ? and e.entity_ref_number = ? or e.company_id = ? and e.location_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, category_id, vendor_id, company_id, category_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1095,7 +1095,7 @@ module.exports = {
     getXeroExpenseByVendor: (company_id, vendor_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id LEFT JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1108,7 +1108,7 @@ module.exports = {
     getXeroExpenseByVendorForUser: (company_id, vendor_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
+                `SELECT e.expense_id,e.created_at,e.updated_at,e.txn_date,e.currency,e.payment_type,e.description,e.account_number,a.name as 'account_name',e.credit,e.entity_ref_number,e.entity_ref_name,e.entity_ref_type,e.total_amount,e.tax,e.is_paid,e.payment_ref_number, e.paid_amount, e.payment_date,c.company_name,d.depart_name from expenses e left join accounts a on e.account_number=a.code and e.company_id=a.company_id join companies c ON e.company_id = c.id JOIN departments d ON d.depart_id = e.department_id where e.company_id = ? and e.entity_ref_number = ? ORDER BY e.created_at ASC`, [company_id, vendor_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

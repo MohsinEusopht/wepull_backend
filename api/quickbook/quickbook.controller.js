@@ -423,7 +423,7 @@ async function getAttachable(access_token, companyID, expense_id) {
             'Authorization': bearer,
         }
     };
-    // console.log("attachable option:",options);
+    console.log("attachable option:",options);
     let array = [];
     // console.log("result","fafa");
     return new Promise(function (resolve, reject) {
@@ -438,6 +438,8 @@ async function getAttachable(access_token, companyID, expense_id) {
         });
     });
 }
+
+
 async function refreshToken(email) {
     // const getRefreshTokenResult = await getRefreshToken(email);
     const getUserByUserEmailResult = await getUserByUserEmail(email);
@@ -864,7 +866,9 @@ module.exports = {
                                         // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
                                         if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
                                             // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                                            for (let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                                                Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                                            }
                                         }
                                         else {
                                             console.log("attachable is undefined");
@@ -1025,8 +1029,9 @@ module.exports = {
                                                 // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
                                                 if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
                                                     // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                                    Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
-
+                                                    for (let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                                                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                                                    }
                                                 }
                                                 else {
                                                     console.log("attachable is undefined");
@@ -1755,7 +1760,9 @@ module.exports = {
                     // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
                     if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
                         // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                        for (let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                        }
                     }
                     else {
                         console.log("attachable is undefined");
@@ -2073,7 +2080,9 @@ module.exports = {
                     // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
                     if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
                         // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                        Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                        for (let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                            Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                        }
                     }
                     else {
                         console.log("attachable is undefined");
@@ -2471,11 +2480,31 @@ module.exports = {
                 const attachableArray = JSON.parse(getAttachableResult);
                 // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
                 if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
-                    // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
-                    // Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
-                                                                                                // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
-                    let updateAttachableResult = await updateAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, company_id, attachableArray.IntuitResponse.QueryResponse.Attachable.FileName._text, attachableArray.IntuitResponse.QueryResponse.Attachable.TempDownloadUri._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Size._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable.MetaData.CreateTime._text, new Date().toISOString());
-                    console.log("attachable updated",attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text);
+                    for(let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                        // console.log("ATTTTTT", attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                        let checkAttachableResult = await checkAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable[i].Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable[i].AttachableRef.EntityRef._text);
+                        console.log("checkAttachableResult[0].attach_count",checkAttachableResult[0].attach_count);
+                        if(checkAttachableResult[0].attach_count === 0) {
+                            let addAttachableResult = await addAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable[i].AttachableRef.EntityRef._text, company_id, attachableArray.IntuitResponse.QueryResponse.Attachable[i].FileName._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].TempDownloadUri._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].Size._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable[i].MetaData.CreateTime._text,attachableArray.IntuitResponse.QueryResponse.Attachable[i].MetaData.LastUpdatedTime._text);
+                            console.log("attachable inserted",attachableArray.IntuitResponse.QueryResponse.Attachable[i].AttachableRef.EntityRef._text)
+                        }
+                        else {
+                            let updateAttachableResult = await updateAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable[i].AttachableRef.EntityRef._text, company_id, attachableArray.IntuitResponse.QueryResponse.Attachable[i].FileName._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].TempDownloadUri._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].Size._text, attachableArray.IntuitResponse.QueryResponse.Attachable[i].Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable[i].MetaData.CreateTime._text, new Date().toISOString());
+                            console.log("attachable updated",attachableArray.IntuitResponse.QueryResponse.Attachable[i].AttachableRef.EntityRef._text)
+                        }
+                    }
+                    //
+                    // if(checkAttachableResult[0].attach_count === 0) {
+                    //     let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                    //     console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    // }
+                    // else {
+                    //     console.log("attachableee",attachableArray.IntuitResponse.QueryResponse.Attachable.length);
+                    //     // Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable);
+                    //     // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                    //     let updateAttachableResult = await updateAttachable(attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, company_id, attachableArray.IntuitResponse.QueryResponse.Attachable.FileName._text, attachableArray.IntuitResponse.QueryResponse.Attachable.TempDownloadUri._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Size._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text,attachableArray.IntuitResponse.QueryResponse.Attachable.MetaData.CreateTime._text, new Date().toISOString());
+                    //     console.log("attachable updated",attachableArray.IntuitResponse.QueryResponse.Attachable.AttachableRef.EntityRef._text, attachableArray.IntuitResponse.QueryResponse.Attachable.Id._text);
+                    // }
                 }
                 else {
                     console.log("attachable is undefined");

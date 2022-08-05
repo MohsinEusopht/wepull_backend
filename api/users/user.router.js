@@ -9,7 +9,9 @@ const {
     createUser,
     getDeparts,
     getUsers,
-    deleteUser,
+    inactivateUser,
+    activateUser,
+    hardDeleteUser,
     editUser,
     updateUser,
     getCompany,
@@ -114,7 +116,9 @@ router.post('/updateUserAsManager', updateUserAsManager);
 router.get('/getUsers/:id',validateAdminPermission, getUsers);
 
 //Soft delete user
-router.get('/deleteUser/:id',validateAdminPermission, deleteUser);
+router.get('/inactivateUser/:id',validateAdminPermission, inactivateUser);
+router.get('/activateUser/:id',validateAdminPermission, activateUser);
+router.get('/hardDeleteUser/:id',validateAdminPermission, hardDeleteUser);
 
 //Check user by email
 router.get('/checkUser/:email', checkUser);

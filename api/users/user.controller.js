@@ -16,7 +16,8 @@ const {
     getDeparts,
     getDepartOfUser,
     getUsers,
-    deleteUser,
+    inactivateUser,
+    activateUser,
     editUser,
     updateUser,
     updateUserRole,
@@ -85,7 +86,9 @@ const {
     getXeroExpensesForUser,
     getQuickbookExpensesForUser,
     storeActivity,
-    getLastSyncedActivity
+    getLastSyncedActivity,
+    hardDeleteUser,
+    deleteUserRelations
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -309,7 +312,7 @@ module.exports = {
 
                 let href = process.env.APP_URL+"setupAccount/"+body.email+"/"+token;
                 // let html = "<html><head></head><body style='background-color: #41ccad;padding-top: 30px;padding-bottom: 30px'><div style='width: 50%;margin-left:auto;margin-right:auto;margin-top: 30px;margin-bottom: 30px;margin-top:20px;border-radius: 10px;background-color: white;height: 100%;padding-top: 30px;padding-bottom: 30px;padding-right: 10px;padding-left: 10px;text-align: center'><img src='https://wepull.netlify.app/finalLogo.png' width='100px' style='margin: auto'><br/><br/><h1 style='text-align: center'>You are invited!</h1><p style='text-align: center'>You are invited to join WePull. Click on the button below to set a password for your account.<br/><br/><a href='"+href+"' style='text-decoration: none'><button style='border-radius: 10px;background-color: #1a2956;color:white;border: none;margin: auto;padding:10px;cursor: pointer'>Accept Invitation</button></a></p></div></body></html>";
-                let html = "<html><head></head><body style='background-color: #eaeaea;padding-top: 30px;padding-bottom: 30px'><div style='width: 50%;margin-left:auto;margin-right:auto;margin-top: 30px;margin-bottom: 30px;margin-top:20px;border-radius: 5px;background-color: white;height: 100%;padding-bottom: 30px;overflow: hidden'><div style='background-color: white;padding-top: 20px;padding-bottom: 20px;width: 100%;text-align: center'><img src='https://wepull.netlify.app/finalLogo.png' width='100px' style='margin: auto'/></div><hr/><h1 style='text-align: center'>You are invited!</h1><p style='padding-left: 10px;padding-right: 10px'>Hi,<br/><br/>You are invited to join WePull. Click on the button below to set a password for your account.<br/><br/><a href='"+href+"' style='text-decoration: none;width: 100%'><button style='border-radius: 5px;background-color: #1a2956;color:white;border: none;margin-left: auto;margin-right: auto;padding:10px;cursor: pointer'>Accept Invitation</button></a><br/><br/>Our team is always here to help. If you have any questions or need further assistance, chat to one of our representatives using live-chat assist on the website or send us an email at support@wepull.io</p></div></body></html>"
+                let html = "<html><head></head><body style='background-color: #eaeaea;padding-top: 30px;padding-bottom: 30px'><div style='width: 50%;margin-left:auto;margin-right:auto;margin-top: 30px;margin-bottom: 30px;margin-top:20px;border-radius: 5px;background-color: white;height: 100%;padding-bottom: 30px;overflow: hidden'><div style='background-color: white;padding-top: 20px;padding-bottom: 20px;width: 100%;text-align: center'><img src='https://wepull.netlify.app/finalLogo.png' width='100px' style='margin: auto'/></div><hr/><h1 style='text-align: center'>You are invited!</h1><p style='padding-left: 10px;padding-right: 10px'>Hi,<br/><br/>You are invited to join WePull. Click on the button below to set a password for your account.<br/><br/><a href='"+href+"' style='text-decoration: none;width: 100%'><button style='border-radius: 5px;background-color: #1a2956;color:white;border: none;margin-left: auto;margin-right: auto;padding:10px;cursor: pointer'>Accept Invitation</button></a><br/><br/>Our team is always here to help. If you have any questions or need further assistance, contact us via email at support@wepull.io</p></div></body></html>"
 
                 console.log("html",html);
                 let mailOptions = {
@@ -747,13 +750,44 @@ module.exports = {
     //         });
     //     }
     // },
-    deleteUser: async(req, res) => {
+    inactivateUser: async(req, res) => {
         try {
             const id = req.params.id;
-            const record = await deleteUser(id);
+            const record = await inactivateUser(id);
             return res.json({
                 success: 1,
                 deleted_user: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    activateUser: async(req, res) => {
+        try {
+            const id = req.params.id;
+            const record = await activateUser(id);
+            return res.json({
+                success: 1,
+                deleted_user: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    hardDeleteUser: async(req, res) => {
+        try {
+            const id = req.params.id;
+            const record = await deleteUserRelations(id);
+            const uu = await hardDeleteUser(id);
+            return res.json({
+                success: 1,
+                deleted_user: uu
             });
         } catch (e) {
             return res.status(404).json({

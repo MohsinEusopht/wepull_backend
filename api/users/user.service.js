@@ -262,7 +262,7 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 // `SELECT u.id,u.first_name,u.last_name,u.email,u.contact,r.name as 'role',d.depart_name FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id LEFT JOIN departments d ON ur.depart_id=d.id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
-                `SELECT DISTINCT(u.id),u.first_name,u.last_name,u.email,u.contact,r.name as 'role',u.depart_id FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id WHERE ur.company_id = ? and ur.role_id!=1 and u.status = 1`, [id],
+                `SELECT DISTINCT(u.id),u.first_name,u.last_name,u.email,u.contact,r.name as 'role',u.depart_id,u.status FROM user_relations ur JOIN users u ON u.id=ur.user_id JOIN roles r ON r.id=ur.role_id WHERE ur.company_id = ? and ur.role_id!=1`, [id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -378,10 +378,23 @@ module.exports = {
             );
         })
     },
-    deleteUser: (id) => {
+    inactivateUser: (id) => {
         return new Promise((resolov, reject) => {
             pool.query(
                 `UPDATE users SET status = 0 WHERE id = ?`, [id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    activateUser: (id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE users SET status = 1 WHERE id = ?`, [id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);
@@ -1585,6 +1598,32 @@ module.exports = {
                 }
             );
         });
-    }
+    },
+    deleteUserRelations: (user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM user_relations WHERE user_id=?`, [user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    hardDeleteUser: (user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM users WHERE id=?`, [user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
 
 };

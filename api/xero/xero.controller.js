@@ -3359,7 +3359,8 @@ module.exports = {
             console.log("record", record)
 
             const attachment = await getAttachment(attach_id);
-            console.log(record);
+            console.log("record",record);
+            console.log("attachment",attachment);
             // console.log(user);
 
             const TS = new TokenSet({
@@ -3375,13 +3376,12 @@ module.exports = {
 
             const contentType = 'image/jpg';
             console.log(record[0].tenant_id, attachment[0].expense_id, attach_id, contentType);
-            const response = await xero.accountingApi.getInvoiceAttachmentByFileName(record[0].tenant_id, attachment[0].expense_id, attachment[0].file_name, contentType);
-            console.log("image", response.body, response.response.statusCode);
+            const response = await xero.accountingApi.getInvoiceAttachmentById(record[0].tenant_id, attachment[0].expense_id, attach_id, contentType);
+            console.log("statusCode",response.response.statusCode);
+            console.log("image", response.body);
             return res.json({
                 arrayBuffer: response.body
             });
-
-
         } catch (err) {
             // const error = JSON.stringify(err.response, null, 2)
             console.log(err);

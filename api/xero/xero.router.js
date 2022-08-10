@@ -1,4 +1,5 @@
 const {validateAdminPermission} = require("../../permissions/admin_permission");
+const {validateUserPermission} = require("../../permissions/user_permission");
 const router = require("express").Router();
 const {
     xero_url,
@@ -17,7 +18,8 @@ const {
     xero_callback_sign_up,
     xero_url_sign_up,
     xeroDisconnect,
-    activateCompany
+    activateCompany,
+    userSyncExpense
 } = require("./xero.controller");
 
 // router.get("/xero_check_login",xero_check_login);
@@ -47,5 +49,8 @@ router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVend
 
 //Route for fetch all data
 router.get('/xeroUpdateAllData/:user_id/:company_id', xeroUpdateAllData);
+
+
+router.get('/userSyncExpense/:user_id/:company_id',validateUserPermission, userSyncExpense);
 
 module.exports = router;

@@ -299,6 +299,8 @@ module.exports = {
                 //     logger: true
                 // });
 
+
+                //Yahoo Config
                 let transporter = nodemailer.createTransport({
                     host: "smtp.mail.yahoo.com",
                     port: 465,
@@ -309,6 +311,19 @@ module.exports = {
                     debug: true, // show debug output
                     logger: true
                 });
+
+
+                // let transporter = nodemailer.createTransport({
+                //     host: "smtp.wepull.io",
+                //     port: 465,
+                //     secure: true,
+                //     auth: {
+                //         user: "no-reply@wepull.io",
+                //         pass: "n0T!fy!m3Now"
+                //     },
+                //     debug: true, // show debug output
+                //     logger: true
+                // });
 
                 let href = process.env.APP_URL+"setupAccount/"+body.email+"/"+token;
                 // let html = "<html><head></head><body style='background-color: #41ccad;padding-top: 30px;padding-bottom: 30px'><div style='width: 50%;margin-left:auto;margin-right:auto;margin-top: 30px;margin-bottom: 30px;margin-top:20px;border-radius: 10px;background-color: white;height: 100%;padding-top: 30px;padding-bottom: 30px;padding-right: 10px;padding-left: 10px;text-align: center'><img src='https://wepull.netlify.app/finalLogo.png' width='100px' style='margin: auto'><br/><br/><h1 style='text-align: center'>You are invited!</h1><p style='text-align: center'>You are invited to join WePull. Click on the button below to set a password for your account.<br/><br/><a href='"+href+"' style='text-decoration: none'><button style='border-radius: 10px;background-color: #1a2956;color:white;border: none;margin: auto;padding:10px;cursor: pointer'>Accept Invitation</button></a></p></div></body></html>";
@@ -705,10 +720,10 @@ module.exports = {
     getLastSyncedActivity: async(req, res) => {
         try {
             const company_id = req.params.company_id;
-            const user_id = req.params.user_id;
             const type = req.params.type;
 
-            const record = await getLastSyncedActivity(company_id, user_id, type);
+            console.log("company_id",company_id,"type",type)
+            const record = await getLastSyncedActivity(company_id, type);
             return res.json({
                 success: 1,
                 data: record

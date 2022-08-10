@@ -18,11 +18,12 @@ const{
     checkTenantVendor,
     addVendor,
     updateVendor,
-    qbgetCompanyById
+    qbgetCompanyById,
 } = require("./quickbook.service");
 
 const {
     checkUserEmail,
+    getCompanyById,
     checkUserCompany,
     updateUserCompany,
     createUserRole,
@@ -231,10 +232,11 @@ async function getPurchases(access_token, companyID, condition) {
             ? OAuthClient.environment.sandbox
             : OAuthClient.environment.production;
 
+    let date = moment(new Date()).subtract(1, 'days').toISOString();
     let bearer = 'Bearer ' + access_token;
     let query;
     if(condition === "today") {
-        query = `select * from Purchase where MetaData.LastUpdatedTime >= '${new Date().toISOString()}'`;
+        query = `select * from Purchase where MetaData.LastUpdatedTime >= '${date}'`;
     }
     else if (condition === "all") {
         query = 'select * from Purchase';
@@ -496,6 +498,7 @@ async function refreshToken(email) {
             });
     }
     else {
+        console.log("Not Expired")
         return "Not Expired";
     }
 }
@@ -2099,6 +2102,168 @@ module.exports = {
                     else {
                         let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
                         console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                    }
+                }
+            }
+        } catch (err) {
+            // const error = JSON.stringify(err.response, null, 2)
+            console.log(err);
+            return res.json({
+                status: 500,
+                message: "Expenses synced failed, Please try again."
+            })
+        }
+        return res.json({
+            status: 200,
+            message: "Expenses synced successfully!"
+        })
+    },
+    userSyncExpense: async (req, res) => {
+        try {
+            const company_id = req.params.company_id;
+            const companyUser = await getUserById(req.params.user_id);
+            const user = await getUserById(companyUser[0].created_by);
+            const record = await getCompanyById(company_id);
+            const user_id = companyUser[0].created_by;
+
+            let token = await refreshToken(user[0].email);
+            if (token) {
+                console.log("company", record);
+                console.log("user id", user_id);
+                console.log("user_id", req.params.user_id, "company_id", company_id, "created_by", user_id);
+                const Attachables = [];
+                console.log("tenant:", record[0].tenant_id, record[0].access_token);
+                let purchases = await getPurchases(record[0].access_token, record[0].tenant_id, "today");
+                let purchaseArray = JSON.parse(purchases);
+                // console.log("purchase",purchaseArray.IntuitResponse.QueryResponse.Purchase[0].TxnDate._text);
+
+                await storeActivity("Expenses Synced","-", "Expense", company_id, user_id);
+                console.log("purchaseArray.IntuitResponse.QueryResponse issssss",isEmptyObject(purchaseArray.IntuitResponse.QueryResponse));
+                if(isEmptyObject(purchaseArray.IntuitResponse.QueryResponse)) {
+                    console.log("purchaseArray.IntuitResponse.QueryResponse is null");
+                }
+                else {
+                    for (const Expense of purchaseArray.IntuitResponse.QueryResponse.Purchase) {
+                        // console.log("Dpt id",Expense.DepartmentRef?Expense.DepartmentRef._text:null);
+                        // console.log(Expense.Line.AccountBasedExpenseLineDetail.length);
+                        console.log("Expenseee",Expense);
+                        if(Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef) {
+                            console.log("ClassRef",Expense.Line.AccountBasedExpenseLineDetail);
+                        }
+                        const checkTenantExpenseResult = await checkTenantExpense(Expense.Id._text,company_id);
+                        if(checkTenantExpenseResult[0].expense_count === 0) {
+
+                            if(Expense.Line.length===undefined) {
+                                let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Added Cash: ", Expense.Id._text)
+                                }
+                            }
+                            else{
+                                for (let i=0;i<Expense.Line.length;i++) {
+                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                    let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                    let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    let com = c + " - " + d;
+
+                                    console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                    if (Expense.PaymentType._text === "CreditCard") {
+                                        // expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, description, credit, entity_ref_number, entity_ref_name, entity_ref_type, department_id, total_amount, company_id, user_id
+                                        const updateExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                        console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                                    }
+                                    else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                        const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                        console.log("Expenses Added Cash: ", Expense.Id._text)
+                                    }
+                                }
+                            }
+                            // if (Expense.PaymentType._text === "CreditCard") {
+                            //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                            //     console.log("Expenses Added Credit Card: ", Expense.Id._text)
+                            // }
+                            // else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                            //     const addExpenseResult = await addQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,Expense.Line.AccountBasedExpenseLineDetail.AccountRef.name._text + " - " + Expense.Line.Description?Expense.Line.Description._text:null,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                            //     console.log("Expenses Added Cash: ", Expense.Id._text)
+                            // }
+                        }
+                        else {
+                            console.log("Found:", Expense.Id._text)
+                            // console.log(Expense.Line[0].AccountBasedExpenseLineDetail.AccountRef._attributes.name);
+                            // this.stop();
+                            if(Expense.Line.length===undefined) {
+
+                                let d = Expense.Line.Description?Expense.Line.Description._text.toString():"No description";
+                                let c = Expense.Line.AccountBasedExpenseLineDetail?Expense.Line.AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                let com = c + " - " + d;
+                                console.log("Expense",Expense.Id._text, " Description", com, "Length is ",Expense.Line.length);
+                                if (Expense.PaymentType._text === "CreditCard") {
+                                    const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                }
+                                else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                    const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                    console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                }
+                            }
+                            else {
+                                for (let i=0;i<Expense.Line.length;i++) {
+                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name + "-" + Expense.Line[i].Description?Expense.Line[i].Description._text:"-");
+                                    let d = Expense.Line[i].Description?Expense.Line[i].Description._text.toString():"No description";
+                                    let c = Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"No category";
+                                    let com = c + " - " + d;
+
+                                    console.log("Expense",Expense.Id._text, " Description", com, "Length",Expense.Line.length);
+                                    // console.log(Expense.Line[i].AccountBasedExpenseLineDetail?Expense.Line[i].AccountBasedExpenseLineDetail.AccountRef._attributes.name.toString():"-")
+                                    if (Expense.PaymentType._text === "CreditCard") {
+                                        const updateExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,Expense.Credit._text,null,null,null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                        console.log("Expenses Updated Credit Card: ", Expense.Id._text)
+                                    }
+                                    else if(Expense.PaymentType._text === "Cash" || Expense.PaymentType._text === "Check") {
+                                        const addExpenseResult = await updateQuickbookExpense(Expense.Id._text,Expense.MetaData.CreateTime._text,Expense.MetaData.LastUpdatedTime._text,Expense.TxnDate._text,Expense.CurrencyRef._text,Expense.PaymentType._text,Expense.AccountRef?Expense.AccountRef._text:null,com,null,Expense.EntityRef?Expense.EntityRef._text:null,Expense.EntityRef?Expense.EntityRef._attributes.name:null,Expense.EntityRef?Expense.EntityRef._attributes.type:null,Expense.DepartmentRef?Expense.DepartmentRef._text:null,Expense.Line.AccountBasedExpenseLineDetail && Expense.Line.AccountBasedExpenseLineDetail.ClassRef?Expense.Line.AccountBasedExpenseLineDetail.ClassRef._text:null,Expense.TotalAmt._text,company_id,user_id)
+                                        console.log("Expenses Updated Cash: ", Expense.Id._text)
+                                    }
+                                }
+                            }
+
+                            // this.stop();
+                        }
+
+                        //Fetch attachable of expense
+                        const getAttachableResult = await getAttachable(record[0].access_token, record[0].tenant_id , Expense.Id._text);
+                        const attachableArray = JSON.parse(getAttachableResult);
+                        // console.log("attachable", attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined?attachableArray.IntuitResponse.QueryResponse.Attachable:"undefined");
+                        if(attachableArray.IntuitResponse.QueryResponse.Attachable!==undefined) {
+                            // console.log("attachable",attachableArray.IntuitResponse.QueryResponse.Attachable);
+                            for (let i=0;i<attachableArray.IntuitResponse.QueryResponse.Attachable.length;i++) {
+                                Attachables.push(attachableArray.IntuitResponse.QueryResponse.Attachable[i]);
+                            }
+                        }
+                        else {
+                            console.log("attachable is undefined");
+                        }
+                    }
+
+                    for (const Attachable of Attachables) {
+                        // console.log("attachable", Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                        let checkAttachableResult = await checkAttachable(Attachable.Id._text,Attachable.AttachableRef.EntityRef._text);
+                        if(checkAttachableResult[0].attach_count === 0) {
+                            let addAttachableResult = await addAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                            console.log("attachable inserted",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                        }
+                        else {
+                            let updateAttachableResult = await updateAttachable(Attachable.AttachableRef.EntityRef._text, company_id, Attachable.FileName._text, Attachable.TempDownloadUri._text, Attachable.Size._text, Attachable.Id._text,Attachable.MetaData.CreateTime._text,Attachable.MetaData.LastUpdatedTime._text);
+                            console.log("attachable updated",Attachable.AttachableRef.EntityRef._text, Attachable.Id._text);
+                        }
                     }
                 }
             }

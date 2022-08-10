@@ -1,4 +1,5 @@
 const {validateAdminPermission} = require("../../permissions/admin_permission");
+const {validateUserPermission} = require("../../permissions/user_permission");
 const router = require("express").Router();
 const {
     quickbooks_url,
@@ -11,7 +12,8 @@ const {
     syncDepartments,
     syncVendors,
     syncAttachable,
-    quickbookDisconnect
+    quickbookDisconnect,
+    userSyncExpense
 } = require("./quickbook.controller");
 router.get("/quickbooks_url/:login_type",quickbooks_url);
 router.get("/quickbooks_callback", quickbooks_callback);
@@ -29,6 +31,8 @@ router.get('/syncAttachable/:user_id/:company_id', syncAttachable);
 
 //Route for fetch all data
 router.get('/quickbookUpdateAllData/:user_id/:company_id', quickbookUpdateAllData);
+
+router.get('/userSyncExpense/:user_id/:company_id',validateUserPermission, userSyncExpense);
 
 
 module.exports = router;

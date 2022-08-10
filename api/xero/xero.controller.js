@@ -2873,6 +2873,298 @@ module.exports = {
         })
 
     },
+    userSyncExpense: async (req, res) => {
+        try {
+            //this function will get today's expenses only and insert and update the data in db according to user.
+            // const user_id = req.params.user_id;
+            const company_id = req.params.company_id;
+            const companyUser = await getUserById(req.params.user_id);
+            const user = await getUserById(companyUser[0].created_by);
+            const record = await getCompanyById(company_id);
+            const user_id = companyUser[0].created_by;
+
+            let token = await refreshToken(user[0].email);
+            // if (token) {
+                console.log("company",record);
+                console.log("user id",user_id);
+                console.log("user_id",user_id, "company_id",company_id, "created_by",user[0].created_by);
+                const TS = new TokenSet({
+                    id_token: user[0].xero_id_token,
+                    access_token: user[0].xero_access_token,
+                    refresh_token: user[0].xero_refresh_token,
+                    token_type: "Bearer",
+                    scope: scope
+                });
+
+                console.log("TS", TS);
+
+                await xero.setTokenSet(TS);
+                await storeActivity("Expenses Synced", "-", "Expense", company_id, user_id);
+
+                const page = 1;
+                const includeArchived = true;
+                const createdByMyApp = false;
+                const unitdp = 4;
+                const summaryOnly = false;
+                const ifModifiedSince = new Date(moment(new Date()).subtract(1, 'days').toISOString());
+                console.log("ifModifiedSince", ifModifiedSince);
+                const responseExp = await xero.accountingApi.getInvoices(record[0].tenant_id, ifModifiedSince, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
+                // const response = await xero.accountingApi.getInvoices(record[0].tenant_id, null, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
+                console.log("Tenant", record[0].tenant_id);
+                console.log("Expense", responseExp.body.invoices);
+                // console.log(response.body || response.response.statusCode)
+                // let expenseArray = JSON.parse(response.body.invoices);
+                // console.log("Response",response.body.invoices)
+
+                for (const Expense of responseExp.body.invoices) {
+                    if (Expense.type === "ACCPAY") {
+                        console.log("Expensessssss", Expense);
+                        const checkTenantExpenseResult = await checkTenantExpense(Expense.invoiceID, company_id);
+                        if (checkTenantExpenseResult[0].expense_count === 0) {
+                            console.log("Expense ID: ", Expense.invoiceID);
+                            console.log("Expense.lineItems.length", Expense.lineItems.length);
+                            console.log("Tracking id", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0].trackingCategoryID : null);
+                            // addXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, total_amount, company_id, user_id)
+                            if (Expense.lineItems.length === 1) {
+                                let vn = await getVendorByID(Expense.contact.contactID);
+                                console.log("vendor", vn[0].name);
+                                let gdpart = null;
+                                let is_paid = "false";
+                                let payment_ref_number = null;
+                                let paid_amount = null;
+                                let payment_date = null;
+
+                                let category,location = null;
+                                if (Expense.lineItems[0].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
+                                    }
+                                }
+                                console.log("category is", category);
+                                console.log("location is", location)
+                                if (Expense.payments.length > 0) {
+                                    is_paid = "true";
+                                    payment_ref_number = Expense.payments[0].reference;
+                                    paid_amount = Expense.payments[0].amount;
+                                    payment_date = Expense.payments[0].date;
+
+                                    console.log("is_paid", is_paid);
+                                    console.log("payment_ref_number", payment_ref_number);
+                                    console.log("paid_amount", paid_amount);
+                                    console.log("payment_date", payment_date);
+                                }
+                                // if (Expense.lineItems[0].tracking.length > 0) {
+                                //
+                                //     console.log("GETED DEPART", gdpart);
+                                //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                // }
+                                let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
+                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                            } else {
+                                for (let i = 0; i < Expense.lineItems.length; i++) {
+                                    let j = +i + +1;
+                                    let vn = await getVendorByID(Expense.contact.contactID);
+                                    console.log("vendor", vn[0].name);
+                                    let gdpart = null;
+                                    let is_paid = "false";
+                                    let payment_ref_number = null;
+                                    let paid_amount = null;
+                                    let payment_date = null;
+                                    let category,location = null;
+                                    if (Expense.lineItems[i].tracking.length > 0) {
+                                        for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
+                                        }
+                                    }
+                                    if (Expense.payments.length > 0) {
+                                        is_paid = "true";
+                                        payment_ref_number = Expense.payments[0].reference;
+                                        paid_amount = Expense.payments[0].amount;
+                                        payment_date = Expense.payments[0].date;
+
+                                        console.log("is_paid", is_paid);
+                                        console.log("payment_ref_number", payment_ref_number);
+                                        console.log("paid_amount", paid_amount);
+                                        console.log("payment_date", payment_date);
+                                    }
+                                    // if (Expense.lineItems[i].tracking.length > 0) {
+                                    //     gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
+                                    //     console.log("GETED DEPART", gdpart);
+                                    //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                    // }
+                                    // let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                }
+                            }
+                        } else {
+                            console.log("FOUND-------------------update:", Expense);
+                            console.log("Expense.lineItems.length update", Expense.lineItems.length);
+
+                            if (Expense.lineItems.length === 1) {
+                                let vn = await getVendorByID(Expense.contact.contactID);
+                                console.log("vendor", vn[0].name);
+                                let gdpart = null;
+                                let is_paid = "false";
+                                let payment_ref_number = null;
+                                let paid_amount = null;
+                                let payment_date = null;
+                                let category,location = null;
+                                if (Expense.lineItems[0].tracking.length > 0) {
+                                    for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
+                                        if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
+                                            // category = Expense.lineItems[0].tracking[x].option;
+                                            category = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        } else if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "locations") {
+                                            // location = Expense.lineItems[0].tracking[x].option;
+                                            location = await getDepartByDepartName(Expense.lineItems[0].tracking[x].option, Expense.lineItems[0].tracking[x].trackingCategoryID);
+                                        }
+                                    }
+                                }
+                                // if (Expense.lineItems[0].tracking.length > 0) {
+                                //     gdpart = await getDepartByDepartName(Expense.lineItems[0].tracking[0].option, Expense.lineItems[0].tracking[0].trackingCategoryID);
+                                //     console.log("GETED DEPART", gdpart);
+                                //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
+                                // }
+                                if (Expense.payments.length > 0) {
+                                    is_paid = "true";
+                                    payment_ref_number = Expense.payments[0].reference;
+                                    paid_amount = Expense.payments[0].amount;
+                                    payment_date = Expense.payments[0].date;
+
+                                    console.log("is_paid", is_paid);
+                                    console.log("payment_ref_number", payment_ref_number);
+                                    console.log("paid_amount", paid_amount);
+                                    console.log("payment_date", payment_date);
+                                }
+
+
+                                // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
+                                let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
+                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                // console.log()
+                            } else {
+                                for (let i = 0; i < Expense.lineItems.length; i++) {
+                                    let j = +i + +1;
+                                    let vn = await getVendorByID(Expense.contact.contactID);
+                                    console.log("vendor", vn[0].name);
+                                    let gdpart = null;
+                                    let is_paid = "false";
+                                    let payment_ref_number = null;
+                                    let paid_amount = null;
+                                    let payment_date = null;
+                                    let category,location = null;
+                                    if (Expense.lineItems[i].tracking.length > 0) {
+                                        for (let x = 0; x < Expense.lineItems[i].tracking.length; x++) {
+                                            if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "departments") {
+                                                // category = Expense.lineItems[0].tracking[x].option;
+                                                category = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            } else if (Expense.lineItems[i].tracking[x].name.toString().toLowerCase() === "locations") {
+                                                // location = Expense.lineItems[0].tracking[x].option;
+                                                location = await getDepartByDepartName(Expense.lineItems[i].tracking[x].option, Expense.lineItems[i].tracking[x].trackingCategoryID);
+                                            }
+                                        }
+                                    }
+                                    // if (Expense.lineItems[i].tracking.length > 0) {
+                                    //     gdpart = await getDepartByDepartName(Expense.lineItems[i].tracking[0].option, Expense.lineItems[i].tracking[0].trackingCategoryID);
+                                    //     console.log("GETED DEPART", gdpart);
+                                    //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
+                                    // }
+                                    if (Expense.payments.length > 0) {
+                                        is_paid = "true";
+                                        payment_ref_number = Expense.payments[0].reference;
+                                        paid_amount = Expense.payments[0].amount;
+                                        payment_date = Expense.payments[0].date;
+
+                                        console.log("is_paid", is_paid);
+                                        console.log("payment_ref_number", payment_ref_number);
+                                        console.log("paid_amount", paid_amount);
+                                        console.log("payment_date", payment_date);
+                                    }
+                                    console.log("Line item ", i);
+                                    // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
+                                    // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
+                                    let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
+                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    // console.log()
+                                }
+                            }
+                        }
+
+                        if (Expense.hasAttachments === true) {
+                            console.log("Line item", Expense.lineItems[0])
+                            // console.log("aaa");
+                            try {
+                                const responseAttachment = await xero.accountingApi.getInvoiceAttachments(record[0].tenant_id, Expense.invoiceID);
+                                // console.log(responseAttachment.body.attachments[0]);
+                                // let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[0].attachmentID,Expense.invoiceID);
+                                // if(checkAttachableResult[0].attach_count === 0) {
+                                //     // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                                //     let addAttachableResult = await addAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                                //     console.log("attachable inserted",Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                                // }
+                                // else {
+                                //     let updateAttachableResult = await updateAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[0].fileName, responseAttachment.body.attachments[0].url, responseAttachment.body.attachments[0].contentLength, responseAttachment.body.attachments[0].attachmentID,null, null);
+                                // }
+                                // // console.log("aaa1");
+                                // console.log("attachment:::",responseAttachment.body.attachments)
+                                for (let i = 0; i < responseAttachment.body.attachments.length; i++) {
+                                    console.log("attachment", i);
+                                    console.log("attachment:::", responseAttachment.body.attachments[i])
+                                    let checkAttachableResult = await checkAttachable(responseAttachment.body.attachments[i].attachmentID, Expense.invoiceID);
+                                    if (checkAttachableResult[0].attach_count === 0) {
+                                        // expense_id, company_id, file_name, download_url, file_size, attach_id, created_at, updated_at
+                                        let addAttachableResult = await addAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID, null, null);
+                                        console.log("attachable inserted", Expense.invoiceID, company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID, null, null);
+                                    }
+                                    else {
+                                        console.log("attachable inserted",Expense.invoiceID,  company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                        let updateAttachableResult = await updateAttachable(Expense.invoiceID, company_id, responseAttachment.body.attachments[i].fileName, responseAttachment.body.attachments[i].url, responseAttachment.body.attachments[i].contentLength, responseAttachment.body.attachments[i].attachmentID,null, null);
+                                    }
+                                }
+                            } catch (e) {
+                                console.log("Error", e);
+                            }
+                        }
+                    // }
+                }
+            }
+
+
+        } catch (err) {
+            // const error = JSON.stringify(err.response, null, 2)
+            console.log("exxx",err);
+            // res.send(err);
+            if(err.response && err.response.body.Status === 403) {
+                return res.json({
+                    status: 500,
+                    message: "You have disconnected this company from WePull"
+                })
+            }
+            else {
+                return res.json({
+                    status: 500,
+                    message: "Expenses synced failed, Please try again."
+                })
+            }
+        }
+        return res.json({
+            status: 200,
+            message: "Expenses synced successfully!"
+        })
+
+    },
     xeroUpdateAllData: async (req, res) => {
         try {
             //this function will get all expenses and insert and update the data in db according to user.

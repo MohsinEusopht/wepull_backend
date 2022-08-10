@@ -1404,10 +1404,10 @@ module.exports = {
             );
         })
     },
-    getLastSyncedActivity: (company_id, user_id, type) => {
+    getLastSyncedActivity: (company_id, type) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `SELECT * FROM activities WHERE company_id = ? and user_id = ? and type = ? ORDER BY id DESC LIMIT 1`, [company_id, user_id, type],
+                `SELECT * FROM activities WHERE company_id = ? and type = ? ORDER BY id DESC LIMIT 1`, [company_id, type],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

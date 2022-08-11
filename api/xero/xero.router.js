@@ -50,7 +50,6 @@ router.get('/syncVendors/:user_id/:company_id',validateAdminPermission, syncVend
 //Route for fetch all data
 router.get('/xeroUpdateAllData/:user_id/:company_id', xeroUpdateAllData);
 
-
 router.get('/userSyncExpense/:user_id/:company_id',validateUserPermission, userSyncExpense);
 
 module.exports = router;

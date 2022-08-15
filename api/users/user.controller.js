@@ -312,9 +312,9 @@ module.exports = {
                     logger: true
                 });
 
-
+                //Gmail , we need app password from gmail
                 // let transporter = nodemailer.createTransport({
-                //     host: "smtp.wepull.io",
+                //     host: "smtp.gmail.com",
                 //     port: 465,
                 //     secure: true,
                 //     auth: {

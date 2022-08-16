@@ -3,6 +3,14 @@ const express = require("express");
 const request = require('request');
 const jwt = require('jsonwebtoken');
 
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: '2020-08-27',
+    appInfo: { // For sample support and debugging, not required for production:
+        name: "stripe-samples/accept-a-payment/payment-element",
+        version: "0.0.2",
+        url: "https://github.com/stripe-samples"
+    }
+});
 
 const userRouter = require("./api/users/user.router");
 const xeroRouter = require("./api/xero/xero.router");
@@ -23,6 +31,25 @@ const urlencodedParser = bodyParser.urlencoded({ extended: false });
 
 const path = __dirname + '/client/build';
 app.use(express.static(path));
+app.use(
+    express.json({
+        // We need the raw body to verify webhook signatures.
+        // Let's compute it only when hitting the Stripe webhook endpoint.
+        verify: function (req, res, buf) {
+            if (req.originalUrl.startsWith('/webhook')) {
+                req.rawBody = buf.toString();
+            }
+        },
+    })
+);
+
+app.get('/config', (req, res) => {
+    res.send({
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    });
+});
+
+
 let corsOptions = {
     origin: process.env.APP_URL
 };
@@ -35,6 +62,7 @@ console.log("Base Url: ",__dirname)
 app.use("/api/users", userRouter);
 app.use("/api/xero", xeroRouter);
 app.use("/api/quickbook", quickbookRouter);
+
 
 process.on('uncaughtException', function(error) {
     console.log(error.stack);

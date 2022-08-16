@@ -67,7 +67,8 @@ const {
     getAllCompanies,
     getQuickbookExpensesForUser,
     getXeroExpensesForUser,
-    getLastSyncedActivity
+    getLastSyncedActivity,
+    get_checkout_url
 } = require("./user.controller");
 
 router.get("/", defaultFun);
@@ -100,6 +101,7 @@ router.get('/getActivateCompany/:user_id', getActivateCompany);
 
 //User apis
 router.post("/createUser",validateAdminPermission, createUser);
+router.get("/get_checkout_url/:email/:categories", validateAdminPermission, get_checkout_url);
 router.get("/checkSetupAccount/:email/:token", checkSetupAccount);
 router.post('/updateSetupAccount', updateSetupAccount);
 router.get("/getCompanyManagementUsers/:id",validateAdminPermission, getCompanyManagementUsers);

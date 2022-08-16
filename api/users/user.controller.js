@@ -2,6 +2,7 @@ const {hashSync,genSaltSync,compareSync} = require("bcrypt");
 const crypto = require('crypto');
 const nodemailer = require("nodemailer");
 const {supplierCount} = require("./user.service");
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const {
     createCompany,
     signUp,
@@ -125,6 +126,7 @@ const { sign } = require("jsonwebtoken");
 //     //     });
 //     // });
 // }
+
 module.exports = {
     defaultFun: async (req, res) => {
         return res.json({
@@ -277,7 +279,7 @@ module.exports = {
             // this.stop();
             if(checkUserResult[0].count === 0) {
                 const createUsersResult = await createUser(body.first_name,body.last_name, body.email, body.password, body.contact, body.company_id, body.depart_id.toString(), body.role_id, body.created_by, body.type);
-                for (let depart of body.depart_id){
+                for (let depart of body.depart_id.split(',')){
                     console.log(depart);
                     const createUserRoleResult = await createUserRole(createUsersResult.insertId, body.company_id, depart, body.role_id, body.created_by);
                 }
@@ -355,7 +357,7 @@ module.exports = {
                             // "url": nodemailer.getTestMessageUrl(info)
                         });
                     }
-                });
+                 });
 
                 // let transporter = nodemailer.createTransport({
                 //     host: "smtp.ethereal.email",
@@ -394,6 +396,36 @@ module.exports = {
                 message: "Error: " + e.message,
             });
         }
+    },
+    get_checkout_url: async (req, res) => {
+        const email = req.params.email;
+        const categories = req.params.categories.toString();
+
+        console.log(`${email}//${categories}`);
+        console.log("categories",categories.slice(','));
+        const session = await stripe.checkout.sessions.create({
+            billing_address_collection: 'auto',
+            customer_email: email,
+            line_items: [
+                {
+                    price: 'price_1LXMCYA94Y1iT6R5fFNpuQgw',
+                    // For metered billing, do not pass quantity
+                    quantity: 1,
+
+                },
+            ],
+            mode: 'subscription',
+            success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
+            cancel_url: `${process.env.APP_URL}users`,
+        });
+        console.log(session)
+        console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
+        console.log("URL", session.url)
+        // return session.url;
+        return res.json({
+            "status": "200",
+            "url": session.url
+        });
     },
     checkSetupAccount: async(req, res) => {
         try {

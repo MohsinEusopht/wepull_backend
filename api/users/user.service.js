@@ -192,6 +192,34 @@ module.exports = {
             );
         })
     },
+    createSubscription: (user_id, company_id, customer_id, subscription_id, amount, package_duration) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `INSERT INTO subscriptions(user_id, company_id, customer_id, subscription_id, amount, package_duration) VALUES (? ,? ,? ,? ,? ,?)`, [user_id, company_id, customer_id, subscription_id, amount, package_duration],
+                (error, results, fields) => {
+                    if (error) {
+                        console.log(error);
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    getSubscription: (user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `SELECT *
+                FROM subscriptions where user_id = ?`, [user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
     getDeparts: (id) => {
         return new Promise((resolov, reject) => {
             pool.query(
@@ -1603,6 +1631,32 @@ module.exports = {
         return new Promise((resolov, reject) => {
             pool.query(
                 `DELETE FROM user_relations WHERE user_id=?`, [user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    deleteUserSubscription: (user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `DELETE FROM subscriptions WHERE user_id=?`, [user_id],
+                (error, results, fields) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    return resolov(results);
+                }
+            );
+        })
+    },
+    updateStatusOfSubscription: (status, user_id) => {
+        return new Promise((resolov, reject) => {
+            pool.query(
+                `UPDATE subscriptions set status = ? WHERE user_id = ?`, [status, user_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

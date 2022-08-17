@@ -89,7 +89,11 @@ const {
     storeActivity,
     getLastSyncedActivity,
     hardDeleteUser,
-    deleteUserRelations
+    deleteUserRelations,
+    createSubscription,
+    getSubscription,
+    deleteUserSubscription,
+    updateStatusOfSubscription
 } = require("./user.service");
 const { sign } = require("jsonwebtoken");
 
@@ -289,6 +293,26 @@ module.exports = {
                 console.log("token", token);
                 const result = setTokenForFirstTimeLogin(body.email, token);
 
+                let user_id = createUsersResult.insertId;
+                let amount = 999;
+                let package_duration = "monthly";
+                //Getting customer subscription id
+                const customers = await stripe.customers.list();
+                customers.data.map(async (customer) => {
+                    if(customer.email === body.email) {
+                        console.log("customerrrrrr", customer);
+                        const subscriptions = await stripe.subscriptions.list();
+                        subscriptions.data.map(async (subscription) => {
+                            if(customer.id === subscription.customer) {
+                                console.log("subscription",subscription.id);
+                                const createSubscriptionResult = await createSubscription(user_id, body.company_id, customer.id,subscription.id, amount,package_duration);
+                                console.log("subscription created",createSubscriptionResult.insertId);
+                            }
+                        });
+                    }
+                });
+
+
                 // let testAccount = await nodemailer.createTestAccount();
                 // let transporter = nodemailer.createTransport({
                 //     host: "smtp.mailtrap.io",
@@ -411,16 +435,20 @@ module.exports = {
                     price: 'price_1LXMCYA94Y1iT6R5fFNpuQgw',
                     // For metered billing, do not pass quantity
                     quantity: 1,
-
                 },
             ],
             mode: 'subscription',
             success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
             cancel_url: `${process.env.APP_URL}users`,
         });
-        console.log(session)
+        console.log("session",session)
         console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
         console.log("URL", session.url)
+
+
+        // console.log("customers",customers);
+
+        // console.log("sessionDetails",sessionDetails);
         // return session.url;
         return res.json({
             "status": "200",
@@ -801,6 +829,18 @@ module.exports = {
         try {
             const id = req.params.id;
             const record = await inactivateUser(id);
+
+            const getSubscriptionResult = await getSubscription(id);
+
+            const subscription = await stripe.subscriptions.update(
+                getSubscriptionResult[0].subscription_id,
+                {pause_collection: {behavior: 'void'}}
+            );
+
+            const updateStatusOfSubscriptionResult = await updateStatusOfSubscription('paused', id);
+
+            console.log("subscription pause",subscription);
+
             return res.json({
                 success: 1,
                 deleted_user: record
@@ -816,6 +856,19 @@ module.exports = {
         try {
             const id = req.params.id;
             const record = await activateUser(id);
+
+            const getSubscriptionResult = await getSubscription(id);
+
+            const subscription = await stripe.subscriptions.update(
+                getSubscriptionResult[0].subscription_id,
+                {
+                    pause_collection: '',
+                }
+            );
+
+            const updateStatusOfSubscriptionResult = await updateStatusOfSubscription('active', id);
+
+            console.log("subscription unpause",subscription);
             return res.json({
                 success: 1,
                 deleted_user: record
@@ -830,11 +883,22 @@ module.exports = {
     hardDeleteUser: async(req, res) => {
         try {
             const id = req.params.id;
-            const record = await deleteUserRelations(id);
-            const uu = await hardDeleteUser(id);
+            const getSubscriptionResult = await getSubscription(id);
+
+            console.log("getSubscriptionResult",getSubscriptionResult[0].subscription_id);
+            const deleted = await stripe.subscriptions.del(
+                getSubscriptionResult[0].subscription_id
+            );
+
+            console.log("deleted",deleted);
+
+            const deleteUserRelationsResult = await deleteUserRelations(id);
+            const hardDeleteUserResult = await hardDeleteUser(id);
+            const deleteUserSubscriptionResult = await deleteUserSubscription(id);
+
             return res.json({
                 success: 1,
-                deleted_user: uu
+                deleted_user: hardDeleteUserResult
             });
         } catch (e) {
             return res.status(404).json({

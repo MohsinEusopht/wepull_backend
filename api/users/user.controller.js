@@ -445,7 +445,7 @@ module.exports = {
                 ],
                 mode: 'subscription',
                 success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
-                cancel_url: `${process.env.APP_URL}users`,
+                cancel_url: `${process.env.APP_URL}createuser`,
             });
             console.log("session",session)
             console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
@@ -464,7 +464,7 @@ module.exports = {
                 ],
                 mode: 'subscription',
                 success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
-                cancel_url: `${process.env.APP_URL}users`,
+                cancel_url: `${process.env.APP_URL}createuser`,
             });
             console.log("session",session)
             console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);

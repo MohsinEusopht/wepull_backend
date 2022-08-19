@@ -208,6 +208,8 @@ module.exports = {
 
                     record[0].password = undefined;
                     console.log("getuser::",record[0]);
+
+
                     const json_token = sign({ result: results }, process.env.JWT_KEY);
                     return res.json({
                         success: 1,
@@ -424,26 +426,51 @@ module.exports = {
     get_checkout_url: async (req, res) => {
         const email = req.params.email;
         const categories = req.params.categories.toString();
+        const plan = req.params.plan;
 
         console.log(`${email}//${categories}`);
         console.log("categories",categories.slice(','));
-        const session = await stripe.checkout.sessions.create({
-            billing_address_collection: 'auto',
-            customer_email: email,
-            line_items: [
-                {
-                    price: 'price_1LXMCYA94Y1iT6R5fFNpuQgw',
-                    // For metered billing, do not pass quantity
-                    quantity: 1,
-                },
-            ],
-            mode: 'subscription',
-            success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
-            cancel_url: `${process.env.APP_URL}users`,
-        });
-        console.log("session",session)
-        console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
-        console.log("URL", session.url)
+
+        let session = null;
+        if(plan === "monthly") {
+            session = await stripe.checkout.sessions.create({
+                billing_address_collection: 'auto',
+                customer_email: email,
+                line_items: [
+                    {
+                        price: 'price_1LXMCYA94Y1iT6R5fFNpuQgw',
+                        // For metered billing, do not pass quantity
+                        quantity: 1,
+                    },
+                ],
+                mode: 'subscription',
+                success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
+                cancel_url: `${process.env.APP_URL}users`,
+            });
+            console.log("session",session)
+            console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
+            console.log("URL", session.url)
+        }
+        else if(plan === "yearly") {
+            session = await stripe.checkout.sessions.create({
+                billing_address_collection: 'auto',
+                customer_email: email,
+                line_items: [
+                    {
+                        price: 'price_1LYTahA94Y1iT6R5NHXTQg8w',
+                        // For metered billing, do not pass quantity
+                        quantity: 1,
+                    },
+                ],
+                mode: 'subscription',
+                success_url: `${process.env.APP_URL}completion/${email}/${categories}`,
+                cancel_url: `${process.env.APP_URL}users`,
+            });
+            console.log("session",session)
+            console.log("success url",`${process.env.APP_URL}completion/${email}/${categories}`);
+            console.log("URL", session.url)
+        }
+
 
 
         // console.log("customers",customers);

@@ -202,55 +202,59 @@ module.exports = {
                 results.password = undefined;
                 // const startTime = await setUserStartTime(results.id);
                 const record = await getUser(results.id);
+                const getCompany = await getCompanyByID(record[0].company_id);
+
                 console.log("user",record);
 
-                if(record[0].role_id === 5) {
+                // if(record[0].role_id === 5) {
 
                     record[0].password = undefined;
-                    console.log("getuser::",record[0]);
-
+                console.log("getuser::",record[0]);
+                console.log("companyData::",getCompany[0]);
 
                     const json_token = sign({ result: results }, process.env.JWT_KEY);
                     return res.json({
-                        success: 1,
+                        status: 1,
                         message: "login successfully",
                         token: json_token,
                         data: record[0],
-                        // data: results,
+                        company_data: getCompany[0]
                     });
-                }
-                else {
-                    const depart = await getDepartOfUser(results.id);
-
-                    const disableAllCompanyResult = await disableAllDepart(results.id);
-                    console.log("disableAllCompanyResult",disableAllCompanyResult);
-                    console.log("depart",depart[0]);
-                    const activateCompanyResult = await activateDepart(depart[0].id, results.id);
 
 
-                    record[0].password = undefined;
-                    console.log("getuser::",record[0]);
-                    const json_token = sign({ result: results }, process.env.JWT_KEY);
-                    return res.json({
-                        success: 1,
-                        message: "login successfully",
-                        token: json_token,
-                        data: record[0],
-                        // data: results,
-                    });
-                }
+                // }
+                // else {
+                //     const depart = await getDepartOfUser(results.id);
+                //
+                //     const disableAllCompanyResult = await disableAllDepart(results.id);
+                //     console.log("disableAllCompanyResult",disableAllCompanyResult);
+                //     console.log("depart",depart[0]);
+                //     const activateCompanyResult = await activateDepart(depart[0].id, results.id);
+                //
+                //
+                //     record[0].password = undefined;
+                //     console.log("getuser::",record[0]);
+                //     const json_token = sign({ result: results }, process.env.JWT_KEY);
+                //     return res.json({
+                //         success: 1,
+                //         message: "login successfully",
+                //         token: json_token,
+                //         data: record[0],
+                //         // data: results,
+                //     });
+                // }
 
             } else {
-                return res.status(404).json({
-                    success: 0,
+                return res.json({
+                    status: 0,
                     message: "Invalid email or password"
                 });
             }
         }
         catch (e) {
-            return res.status(404).json({
+            return res.json({
                 success: 0,
-                message: "Invalid email or password"
+                message: "Something went wrong."
             });
         }
     },

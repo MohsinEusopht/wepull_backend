@@ -2136,7 +2136,7 @@ module.exports = {
                                     //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
                                     // }
                                     let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 } else {
                                     for (let i = 0; i < Expense.lineItems.length; i++) {
                                         let j = +i + +1;
@@ -2176,7 +2176,7 @@ module.exports = {
                                         //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
                                         // }
                                         let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                        const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                        const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                     }
                                 }
                             }
@@ -2645,7 +2645,8 @@ module.exports = {
                             let paid_amount = null;
                             let payment_date = null;
 
-                            let category,location = null;
+                            let category = null;
+                            let location = null;
                             if (Expense.lineItems[0].tracking.length > 0) {
                                 for (let x = 0; x < Expense.lineItems[0].tracking.length; x++) {
                                     if (Expense.lineItems[0].tracking[x].name.toString().toLowerCase() === "departments") {
@@ -2676,7 +2677,7 @@ module.exports = {
                             //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
                             // }
                             let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                            const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                            const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                         } else {
                             for (let i = 0; i < Expense.lineItems.length; i++) {
                                 let j = +i + +1;
@@ -2716,7 +2717,7 @@ module.exports = {
                                 //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
                                 // }
                                 // let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                             }
                         }
                     } else {
@@ -2763,7 +2764,7 @@ module.exports = {
 
                             // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                             let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                            const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                            const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                             // console.log()
                         } else {
                             for (let i = 0; i < Expense.lineItems.length; i++) {
@@ -2807,7 +2808,7 @@ module.exports = {
                                 // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
                                 // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                 let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 // console.log()
                             }
                         }
@@ -2965,7 +2966,7 @@ module.exports = {
                                 //     console.log("category", Expense.lineItems[0].tracking.length > 0 ? Expense.lineItems[0].tracking[0] : null)
                                 // }
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
                                     let j = +i + +1;
@@ -3005,7 +3006,7 @@ module.exports = {
                                     //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
                                     // }
                                     // let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 }
                             }
                         } else {
@@ -3052,7 +3053,7 @@ module.exports = {
 
                                 // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 // console.log()
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
@@ -3096,7 +3097,7 @@ module.exports = {
                                     // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
                                     // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                     let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                     // console.log()
                                 }
                             }
@@ -3360,7 +3361,7 @@ module.exports = {
                                 // }
 
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const addExpenseResult = await addXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
                                     let j = +i + +1;
@@ -3400,7 +3401,7 @@ module.exports = {
                                     //     console.log("category", Expense.lineItems[i].tracking.length > 0 ? Expense.lineItems[i].tracking[0] : null)
                                     // }
                                     let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const addExpenseResult = await addXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, totalAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 }
                             }
                         } else {
@@ -3448,7 +3449,7 @@ module.exports = {
                                 // console.log(Expense.invoiceID,Expense.date,Expense.updatedDateUTC,null,vn[0].vendor_id!==undefined?vn[0].vendor_id:null, vn[0].name!==undefined?vn[0].name:null,Expense.currencyCode,Expense.type,Expense.lineItems[i].accountCode,null,Expense.lineItems[i].description,gdpart!==null?gdpart[0].depart_id:null,Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date,company_id, user_id);
                                 // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                 let totalAmount = +Expense.lineItems[0].lineAmount + +Expense.lineItems[0].taxAmount;
-                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, 1, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[0].accountCode, null, Expense.lineItems[0].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[0].lineAmount , Expense.lineItems[0].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                 // console.log()
                             } else {
                                 for (let i = 0; i < Expense.lineItems.length; i++) {
@@ -3494,7 +3495,7 @@ module.exports = {
                                     // console.log(Expense.invoiceID, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, gdpart !== null ? gdpart[0].depart_id : null, Expense.lineItems[i].unitAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id);
                                     // updateXeroExpense:(expense_id, created_at, updated_at, txn_date, currency, payment_type, account_number, credit, description, department_id, total_amount, company_id, user_id)
                                     let totalAmount = +Expense.lineItems[i].lineAmount + +Expense.lineItems[i].taxAmount;
-                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? category[0].depart_id : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
+                                    const updateExpenseResult = await updateXeroExpense(Expense.invoiceID, j, Expense.date, Expense.updatedDateUTC, null, vn[0].vendor_id !== undefined ? vn[0].vendor_id : null, vn[0].name !== undefined ? vn[0].name : null, Expense.currencyCode, Expense.type, Expense.lineItems[i].accountCode, null, Expense.lineItems[i].description, category !== null ? (category !== undefined ? category[0].depart_id:null) : null, location !== null ? location[0].depart_id : null, Expense.lineItems[i].lineAmount , Expense.lineItems[i].taxAmount, is_paid, payment_ref_number, paid_amount, payment_date, company_id, user_id)
                                     // console.log()
                                 }
                             }

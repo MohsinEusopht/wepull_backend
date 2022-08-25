@@ -1630,7 +1630,7 @@ module.exports = {
     deleteUserRelations: (user_id) => {
         return new Promise((resolov, reject) => {
             pool.query(
-                `DELETE FROM user_relations WHERE user_id=?`, [user_id],
+                `DELETE FROM user_relations WHERE user_id = ?`, [user_id],
                 (error, results, fields) => {
                     if (error) {
                         return reject(error);

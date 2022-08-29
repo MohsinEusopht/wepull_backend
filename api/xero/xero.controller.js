@@ -3639,6 +3639,8 @@ module.exports = {
             const userData = await getUserById(user_id);
             let record;
             let user;
+
+            console.log("")
             if (userData[0].role_id === 1) {
                 user = await getUserById(user_id);
                 record = await getActivateCompany(user_id);

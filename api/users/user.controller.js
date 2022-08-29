@@ -17,6 +17,7 @@ const {
     getDeparts,
     getDepartOfUser,
     getUsers,
+    getAdminById,
     inactivateUser,
     activateUser,
     editUser,
@@ -194,23 +195,24 @@ module.exports = {
             const body = req.body;
             const results = await getUserByUserEmail(body.email);
 
-            console.log("results",results);
-            results.password = results.password.replace(/^\$2y(.+)$/i, '$2a$1');
-            const result = compareSync(body.password, results.password);
+            if(results) {
+                console.log("results",results);
+                results.password = results.password.replace(/^\$2y(.+)$/i, '$2a$1');
+                const result = compareSync(body.password, results.password);
 
-            if (result) {
-                results.password = undefined;
-                // const startTime = await setUserStartTime(results.id);
-                const record = await getUser(results.id);
-                const getCompany = await getCompanyByID(record[0].company_id);
+                if (result) {
+                    results.password = undefined;
+                    // const startTime = await setUserStartTime(results.id);
+                    const record = await getUser(results.id);
+                    const getCompany = await getCompanyByID(record[0].company_id);
 
-                console.log("user",record);
+                    console.log("user",record);
 
-                // if(record[0].role_id === 5) {
+                    // if(record[0].role_id === 5) {
 
                     record[0].password = undefined;
-                console.log("getuser::",record[0]);
-                console.log("companyData::",getCompany[0]);
+                    console.log("getuser::",record[0]);
+                    console.log("companyData::",getCompany[0]);
 
                     const json_token = sign({ result: results }, process.env.JWT_KEY);
                     return res.json({
@@ -222,34 +224,42 @@ module.exports = {
                     });
 
 
-                // }
-                // else {
-                //     const depart = await getDepartOfUser(results.id);
-                //
-                //     const disableAllCompanyResult = await disableAllDepart(results.id);
-                //     console.log("disableAllCompanyResult",disableAllCompanyResult);
-                //     console.log("depart",depart[0]);
-                //     const activateCompanyResult = await activateDepart(depart[0].id, results.id);
-                //
-                //
-                //     record[0].password = undefined;
-                //     console.log("getuser::",record[0]);
-                //     const json_token = sign({ result: results }, process.env.JWT_KEY);
-                //     return res.json({
-                //         success: 1,
-                //         message: "login successfully",
-                //         token: json_token,
-                //         data: record[0],
-                //         // data: results,
-                //     });
-                // }
+                    // }
+                    // else {
+                    //     const depart = await getDepartOfUser(results.id);
+                    //
+                    //     const disableAllCompanyResult = await disableAllDepart(results.id);
+                    //     console.log("disableAllCompanyResult",disableAllCompanyResult);
+                    //     console.log("depart",depart[0]);
+                    //     const activateCompanyResult = await activateDepart(depart[0].id, results.id);
+                    //
+                    //
+                    //     record[0].password = undefined;
+                    //     console.log("getuser::",record[0]);
+                    //     const json_token = sign({ result: results }, process.env.JWT_KEY);
+                    //     return res.json({
+                    //         success: 1,
+                    //         message: "login successfully",
+                    //         token: json_token,
+                    //         data: record[0],
+                    //         // data: results,
+                    //     });
+                    // }
 
-            } else {
+                } else {
+                    return res.json({
+                        status: 0,
+                        message: "Invalid email or password"
+                    });
+                }
+            }
+            else {
                 return res.json({
                     status: 0,
-                    message: "Invalid email or password"
+                    message: "Email do not exist"
                 });
             }
+
         }
         catch (e) {
             return res.json({
@@ -618,6 +628,25 @@ module.exports = {
         try {
             const id = req.params.id;
             const record = await getUsers(id);
+            console.log("id",id);
+            console.log("data",record);
+            return res.json({
+                success: 1,
+                data: record
+            });
+        } catch (e) {
+            return res.status(404).json({
+                success: 0,
+                message: "Error :" + e.message,
+            });
+        }
+    },
+    getAdminById: async(req, res) => {
+        try {
+            const id = req.params.id;
+            const record = await getAdminById(id);
+            console.log("id",id);
+            console.log("data",record);
             return res.json({
                 success: 1,
                 data: record

@@ -2617,7 +2617,7 @@ module.exports = {
             const createdByMyApp = false;
             const unitdp = 4;
             const summaryOnly = false;
-            const ifModifiedSince = new Date(moment(new Date()).subtract(1, 'days').toISOString());
+            const ifModifiedSince = new Date(moment(new Date()).subtract(5, 'days').toISOString());
             console.log("ifModifiedSince", ifModifiedSince);
             const responseExp = await xero.accountingApi.getInvoices(record[0].tenant_id, ifModifiedSince, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
             // const response = await xero.accountingApi.getInvoices(record[0].tenant_id, null, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
@@ -2907,7 +2907,7 @@ module.exports = {
                 const createdByMyApp = false;
                 const unitdp = 4;
                 const summaryOnly = false;
-                const ifModifiedSince = new Date(moment(new Date()).subtract(1, 'days').toISOString());
+                const ifModifiedSince = new Date(moment(new Date()).subtract(5, 'days').toISOString());
                 console.log("ifModifiedSince", ifModifiedSince);
                 const responseExp = await xero.accountingApi.getInvoices(record[0].tenant_id, ifModifiedSince, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);
                 // const response = await xero.accountingApi.getInvoices(record[0].tenant_id, null, null, null, null, null, null, null, page, includeArchived, createdByMyApp, unitdp, summaryOnly);

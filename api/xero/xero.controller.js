@@ -3636,18 +3636,24 @@ module.exports = {
             console.log("attach_id", attach_id);
             console.log("user_id", user_id);
             // const company_id = req.params.company_id;
+
             const userData = await getUserById(user_id);
             let record;
-            let user;
+            let userFortoken;
 
             console.log("")
             if (userData[0].role_id === 1) {
-                user = await getUserById(user_id);
+                userFortoken = await getUserById(user_id);
                 record = await getActivateCompany(user_id);
             } else {
                 record = await getCompanyById(userData[0].company_id);
-                user = await getUserById(userData[0].created_by);
+                userFortoken = await getUserById(userData[0].created_by);
             }
+
+            const token = refreshToken(userFortoken[0].email);
+
+            const user = await getUserById(userFortoken[0].id);
+
 
             console.log("userData", userData)
             console.log("user", user)
